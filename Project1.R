@@ -107,6 +107,16 @@ head(RECS2015$MONEYPY)
 
 plot(RECS2015$MONEYPY)
 
+hp_mon_df <- data.frame(RECS2015$CENACHP, RECS2015$MONEYPY)
+
+colnames(hp_mon_df) <- c("Heat Pump", "Income")
+
+hp_mon_df <- hp_mon_df %>%
+  filter(`Heat Pump` == "Has a Heat Pump")
+
+barplot(table(hp_mon_df$`Heat Pump`, hp_mon_df$Income))
+
+
 #Spatial differences info------
 
 
