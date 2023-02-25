@@ -1,6 +1,6 @@
 #setwd() Meng Fei's WD  
 #setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
-#setwd("C:/Users/danif/OneDrive/Documents/GitHub/Data-Science-Project/Project1.R") Daniel's WD
+#setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
 #install.packages("survey","ggmap","maps","mapdata","formattable")
