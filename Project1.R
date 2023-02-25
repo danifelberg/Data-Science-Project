@@ -11,7 +11,7 @@ library(maps)
 library(mapdata)
 library(formattable)
 
-#----LoadData and Assign weights. 
+#LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
 
 RECS2015 <- read.csv("recs2015_public_v4.csv", header=TRUE, sep=",")
@@ -33,7 +33,7 @@ des <- svrepdesign(weights = sampweights,
 des
 svytotal(~NG_MAINSPACEHEAT, des)
 
-#Appliances info-----------------
+#Appliances info ----
 
 #Central Air------
 #Electricity costs for space heating (“DOLELSPH” variable),
@@ -63,12 +63,62 @@ RECS2015 <- RECS2015 %>%
                                        CENACHP == 0 ~ "No Heat Pump",
                                        CENACHP == -2 ~ "NA")))
 
-plot(RECS2015$CENACHP)
-head(RECS2015$CENACHP)
-
 svytotal(~CENACHP, des)
 
-#Electricity costs for water heating (“DOLELWTH” variable),
+central_air_df <- data.frame(RECS2015$DOLELSPH, 
+                             RECS2015$DOLELCOL, 
+                             RECS2015$CENACHP)
+
+colnames(central_air_df) <- c("Electricity Space Heating Costs", 
+                              "Electricity AC Costs", 
+                              "Heat Pump Status")
+
+#heatpump v. space heating costs plot
+ggplot(central_air_df, 
+       aes(x = `Heat Pump Status`,
+           y = `Electricity Space Heating Costs`,
+           fill = `Heat Pump Status`))+
+  geom_bar(stat = "identity", position = "dodge")+
+  labs(title = "Space Heating Costs With and Without Heatpumps")
+
+#heatpump v. ac costs plot
+ggplot(central_air_df, 
+       aes(x = `Heat Pump Status`,
+           y = `Electricity AC Costs`,
+           fill = `Heat Pump Status`))+
+  geom_bar(stat = "identity", position = "dodge")+
+  labs(title = "AC Costs With and Without Heatpumps")
+
+#t-test for heatpumps v. spaceheater
+
+ttest_central_air_df <- central_air_df %>%
+  mutate(`alt` = central_air_df$`Heat Pump Status` == "Has a Heat Pump",
+         'null' = central_air_df$`Heat Pump Status` == "No Heat Pump")
+
+no_hp <- ttest_central_air_df %>%
+  filter(null == TRUE)
+    
+has_hp <- ttest_central_air_df %>%
+  filter(alt == TRUE)
+
+t.test(x = has_hp$`Electricity Space Heating Costs`,
+       conf.level = 0.95,
+       mu = mean(no_hp$`Electricity Space Heating Costs`))
+
+#t-test for heatpumps v. AC
+
+no_hp <- ttest_central_air_df %>%
+  filter(null == TRUE)
+
+has_hp <- ttest_central_air_df %>%
+  filter(alt == TRUE)
+
+t.test(x = has_hp$`Electricity AC Costs`,
+       conf.level = 0.95,
+       mu = mean(no_hp$`Electricity AC Costs`))
+
+#other common appliances----- ----
+#Electricity costs for water heating (“DOLELWTH” variable)----
 
 RECS2015$DOLELWTH <- currency(RECS2015$DOLELWTH,
                               symbol = "$",
@@ -77,6 +127,7 @@ RECS2015$DOLELWTH <- currency(RECS2015$DOLELWTH,
                               big.mark = ",",
                               sep = "")
 svytotal(~DOLELWTH, des)
+
 
 #Electricity costs for all refrigerators (“DOLELRFG” variable),
 
@@ -101,21 +152,25 @@ RECS2015 <- RECS2015 %>%
                                        MONEYPY == 7 ~ "$120,000 to $139,999",
                                        MONEYPY == 8 ~ "$140,000 or more")))
 
-
-
-head(RECS2015$MONEYPY)
-
 plot(RECS2015$MONEYPY)
 
-hp_mon_df <- data.frame(RECS2015$CENACHP, RECS2015$MONEYPY)
+central_air_df["Income"] <- data.frame(RECS2015$MONEYPY)
 
-colnames(hp_mon_df) <- c("Heat Pump", "Income")
+has_hp <- central_air_df %>%
+  filter(`Heat Pump Status` == "Has a Heat Pump")
 
-hp_mon_df <- hp_mon_df %>%
-  filter(`Heat Pump` == "Has a Heat Pump")
+no_hp <- central_air_df %>%
+  filter(`Heat Pump Status` == "No Heat Pump")
 
-barplot(table(hp_mon_df$`Heat Pump`, hp_mon_df$Income))
-
+ggplot(central_air_df, 
+       aes(x = Income,
+           y = `Heat Pump Status`,
+           fill = `Heat Pump Status`))+
+  geom_bar(stat = "identity", position = 'stack')+
+  labs(title = "Income Bracket And Heat Pump Status",
+       ylab = "")+
+  theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)),
+        axis.text.y=element_blank()) #needs to fix income brackets to be ascending
 
 #Spatial differences info------
 
@@ -177,7 +232,6 @@ plot(x = log(house_size$RECS2015.TOTSQFT_EN),
 hist(log(RECS2015$TOTSQFT_EN))
 hist(log(RECS2015$DOLLAREL))
 
-count(RECS2015$CENACHP, )
 
 heatpump_lm <- lm(CENACHP ~ TOTSQFT_EN + DOLLAREL + KWHCOL + BTUELCOL, data = RECS2015)
 
