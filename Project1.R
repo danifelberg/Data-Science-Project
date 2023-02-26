@@ -255,3 +255,81 @@ ggplot(data = states) +
                color = "white") + 
   coord_fixed(1.3) +
   guides(fill=FALSE)  # do this to leave off the color legend
+
+# census divisions
+
+states <- states %>%
+  mutate(region = as.factor(case_when(region == "connecticut" ~ "new_england",
+                                      region == "maine" ~ "new_england",
+                                      region == "massachusetts" ~ "new_england",
+                                      region == "new hampshire" ~ "new_england",
+                                      region == "rhode island" ~ "new_england",
+                                      region == "vermont" ~ "new_england",
+                                      region == "new jersey" ~ "middle_atlantic",
+                                      region == "new york" ~ "middle_atlantic",
+                                      region == "pennsylvania" ~ "middle_atlantic",
+                                      region == "indiana" ~ "east_north_central",
+                                      region == "illinois" ~ "east_north_central",
+                                      region == "michigan" ~ "east_north_central",
+                                      region == "ohio" ~ "east_north_central",
+                                      region == "wisconsin" ~ "east_north_central",
+                                      region == "iowa" ~ "west_north_central",
+                                      region == "kansas" ~ "west_north_central",
+                                      region == "minnesota" ~ "west_north_central",
+                                      region == "missouri" ~ "west_north_central",
+                                      region == "nebraska" ~ "west_north_central",
+                                      region == "north dakota" ~ "west_north_central",
+                                      region == "south dakota" ~ "west_north_central",
+                                      region == "delaware" ~ "south_atlantic",
+                                      region == "district of columbia" ~ "south_atlantic",
+                                      region == "florida" ~ "south_atlantic",
+                                      region == "georgia" ~ "south_atlantic",
+                                      region == "maryland" ~ "south_atlantic",
+                                      region == "north carolina" ~ "south_atlantic",
+                                      region == "south carolina" ~ "south_atlantic",
+                                      region == "virginia" ~ "south_atlantic",
+                                      region == "west virginia" ~ "south_atlantic",
+                                      region == "alabama" ~ "east_south_central",
+                                      region == "kentucky" ~ "east_south_central",
+                                      region == "mississippi" ~ "east_south_central",
+                                      region == "tennessee" ~ "east_south_central",
+                                      region == "arkansas" ~ "west_south_central",
+                                      region == "louisiana" ~ "west_south_central",
+                                      region == "oklahoma" ~ "west_south_central",
+                                      region == "texas" ~ "west_south_central",
+                                      region == "arizona" ~ "mountain",
+                                      region == "colorado" ~ "mountain",
+                                      region == "idaho" ~ "mountain",
+                                      region == "new mexico" ~ "mountain",
+                                      region == "montana" ~ "mountain",
+                                      region == "utah" ~ "mountain",
+                                      region == "nevada" ~ "mountain",
+                                      region == "wyoming" ~ "mountain",
+                                      region == "alaska" ~ "pacific",
+                                      region == "california" ~ "pacific",
+                                      region == "hawaii" ~ "pacific",
+                                      region == "oregon" ~ "pacific",
+                                      region == "washington" ~ "pacific",)))
+
+ggplot(data = states) + 
+  geom_polygon(aes(x = long, 
+                   y = lat, 
+                   fill = region, 
+                   group = group), 
+               color = "white") + 
+  coord_fixed(1.3) +
+  guides(fill=FALSE)
+
+# rename "region" column from `states` dataframe to match `RECS2015` column name
+colnames(states) <- c("long", "lat", "group", "order", "DIVISION", "subregion")
+
+# rename `Tot_Energy_area_df` columns
+colnames(Tot_Energy_area_df) <- c("Urban Type", "Elec cost", "DIVISION")
+
+# subsetting divisions to find their average energy cost
+Tot_Energy_NewEngland <- Tot_Energy_area_df[Tot_Energy_area_df$DIVISION == "new_england", ]
+NewEngland_CostMean <- mean(Tot_Energy_NewEngland$`Elec cost`)
+
+Tot_Energy_MiddleAtlantic <- Tot_Energy_area_df[Tot_Energy_area_df$DIVISION == "middle_atlantic", ]
+MiddleAtlantic_CostMean <- mean(Tot_Energy_MiddleAtlantic$`Elec cost`)
+
