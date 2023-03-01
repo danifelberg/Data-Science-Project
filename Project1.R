@@ -1,5 +1,5 @@
 #setwd() Meng Fei's WD  
-#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -117,6 +117,18 @@ t.test(x = has_hp$`Electricity AC Costs`,
        conf.level = 0.95,
        mu = mean(no_hp$`Electricity AC Costs`))
 
+#chisquared test of heatpump related to income (removed NAs)
+nona_central_air_df <- central_air_df
+nona_central_air_df <- subset(central_air_df, 
+                              subset = `Heat Pump Status` != 'NA', 
+                              select = c(1:4),
+                              drop = TRUE)
+
+chisq_hp_inc <- chisq.test(nona_central_air_df$`Heat Pump Status`, 
+                           nona_central_air_df$Income)
+
+
+
 #other common appliances----- ----
 #Electricity costs for water heating (“DOLELWTH” variable)----
 
@@ -127,7 +139,6 @@ RECS2015$DOLELWTH <- currency(RECS2015$DOLELWTH,
                               big.mark = ",",
                               sep = "")
 svytotal(~DOLELWTH, des)
-
 
 #Electricity costs for all refrigerators (“DOLELRFG” variable),
 
@@ -151,8 +162,6 @@ RECS2015 <- RECS2015 %>%
                                        MONEYPY == 6 ~ "$100,000 to $119,999",
                                        MONEYPY == 7 ~ "$120,000 to $139,999",
                                        MONEYPY == 8 ~ "$140,000 or more")))
-
-plot(RECS2015$MONEYPY)
 
 central_air_df["Income"] <- data.frame(RECS2015$MONEYPY)
 
