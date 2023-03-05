@@ -118,16 +118,18 @@ t.test(x = has_hp$`Electricity AC Costs`,
        mu = mean(no_hp$`Electricity AC Costs`))
 
 #chisquared test of heatpump related to income (removed NAs)
-nona_central_air_df <- central_air_df
+nona_central_air_df <- central_air_df #make sure to load income section DF before running this
 nona_central_air_df <- subset(central_air_df, 
                               subset = `Heat Pump Status` != 'NA', 
-                              select = c(1:4),
                               drop = TRUE)
 
-chisq_hp_inc <- chisq.test(nona_central_air_df$`Heat Pump Status`, 
-                           nona_central_air_df$Income)
+test <- table(nona_central_air_df$`Heat Pump Status`,
+              nona_central_air_df$Income)
 
+test <- table(droplevels(nona_central_air_df)$`Heat Pump Status`,
+      nona_central_air_df$Income)
 
+chisq_hp_inc <- chisq.test(test)
 
 #other common appliances----- ----
 #Electricity costs for water heating (“DOLELWTH” variable)----
@@ -171,15 +173,25 @@ has_hp <- central_air_df %>%
 no_hp <- central_air_df %>%
   filter(`Heat Pump Status` == "No Heat Pump")
 
-ggplot(central_air_df, 
-       aes(x = Income,
-           y = `Heat Pump Status`,
-           fill = `Heat Pump Status`))+
+central_air_df %>%
+  arrange(`Heat Pump Status`) %>%
+  mutate(Income = factor(Income, levels = c("Less than $20,000",
+                                            "$20,000 - $39,999",
+                                            "$40,000 - $59,999",
+                                            "$60,000 to $79,999",
+                                            "$80,000 to $99,999",
+                                            "$100,000 to $119,999",
+                                            "$120,000 to $139,999",
+                                            "$140,000 or more")))%>%
+  ggplot(aes(x = Income,
+             y = `Heat Pump Status`,
+             fill = `Heat Pump Status`))+
   geom_bar(stat = "identity", position = 'stack')+
   labs(title = "Income Bracket And Heat Pump Status",
        ylab = "")+
   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)),
         axis.text.y=element_blank()) #needs to fix income brackets to be ascending
+
 
 #Spatial differences info------
 
