@@ -3,13 +3,15 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer")
 library(survey)
 library(dplyr)
 library(ggmap)
 library(maps)
 library(mapdata)
 library(formattable)
+library(forcats)
+library(RColorBrewer)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -217,7 +219,6 @@ central_air_df %>%
 
 #Spatial differences info------
 
-
 #Preparing Census Regions 
 
 RECS2015 <- RECS2015 %>%
@@ -256,10 +257,34 @@ RECS2015 <- RECS2015 %>%
 
 #dataframe of area and total energy
 Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division")
 
 #rough plot to see expenditure differences by density classification
-plot(y = Tot_Energy_area_df$RECS2015.DOLLAREL,
-     x = Tot_Energy_area_df$RECS2015.UATYP10)
+
+Tot_Energy_area_df %>%
+  arrange(`Yearly Electricity Costs`)%>%
+  mutate(Division = factor(Division, levels = c("New England",
+                            "Middle Atlantic",
+                           "East North Central",
+                           "West North Central",
+                           "South Atlantic",
+                           "East South Central",
+                           "West South Central",
+                           "Mountain North",
+                           "Mountain South",
+                           "Pacific")))%>%
+  ggplot(
+       aes(x = `Urban Density`,
+           y = `Yearly Electricity Costs`,
+           fill = fct_reorder(`Division`, `Yearly Electricity Costs`)))+
+  geom_boxplot(stat = "boxplot", position = "dodge")+
+  labs(title = "Urban Density and Electricity Costs",
+       fill= "Division")+
+  theme(axis.text.x = element_text(size = 9, margin = margin(r=0)), 
+        axis.text.y=element_blank())+ 
+  scale_color_brewer(palette = "Pastel2")
+
+chisq.test(Tot_Energy_area_df[c(1,2)])
 
 #What are the energy costs (“DOLLAREL” variable) for homeowners based on the number of rooms (“TOTROOMS” variable)?
 
