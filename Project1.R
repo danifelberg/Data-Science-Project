@@ -186,12 +186,34 @@ central_air_df %>%
   ggplot(aes(x = Income,
              y = `Heat Pump Status`,
              fill = `Heat Pump Status`))+
-  geom_bar(stat = "identity", position = 'stack')+
+  geom_bar(stat = "identity")+
   labs(title = "Income Bracket And Heat Pump Status",
        ylab = "")+
   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)),
         axis.text.y=element_blank()) #needs to fix income brackets to be ascending
 
+#boxplot of income and yearly energy costs
+central_air_df["TotElectricity"] <- RECS2015$DOLLAREL
+
+central_air_df %>%
+  arrange(`Heat Pump Status`) %>%
+  mutate(Income = factor(Income, levels = c("Less than $20,000",
+                                            "$20,000 - $39,999",
+                                            "$40,000 - $59,999",
+                                            "$60,000 to $79,999",
+                                            "$80,000 to $99,999",
+                                            "$100,000 to $119,999",
+                                            "$120,000 to $139,999",
+                                            "$140,000 or more")))%>%
+  ggplot(aes(x = Income,
+             y = TotElectricity, 
+             color = Income)) + 
+  geom_boxplot(stat = "boxplot") +
+  labs(title = " Electricity Cost Between Different Income Level ", 
+       x = "Income level",
+       y = "Yearly Electricity Cost (in Dollars)")+  
+  theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
+        axis.text.y=element_blank())
 
 #Spatial differences info------
 
