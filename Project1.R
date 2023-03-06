@@ -12,6 +12,7 @@ library(mapdata)
 library(formattable)
 library(forcats)
 library(RColorBrewer)
+library(ezids)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -74,6 +75,10 @@ central_air_df <- data.frame(RECS2015$DOLELSPH,
 colnames(central_air_df) <- c("Electricity Space Heating Costs", 
                               "Electricity AC Costs", 
                               "Heat Pump Status")
+RECS2015 %>%
+  filter(EQUIPM == 4)%>%
+  select(EQUIPM)
+  
 
 #heatpump v. space heating costs plot
 ggplot(central_air_df, 
@@ -197,6 +202,8 @@ central_air_df %>%
 #boxplot of income and yearly energy costs
 central_air_df["TotElectricity"] <- RECS2015$DOLLAREL
 
+central_air_df <- outlierKD2(central_air_df, TotElectricity, rm= TRUE)
+
 central_air_df %>%
   arrange(`Heat Pump Status`) %>%
   mutate(Income = factor(Income, levels = c("Less than $20,000",
@@ -215,7 +222,7 @@ central_air_df %>%
        x = "Income level",
        y = "Yearly Electricity Cost (in Dollars)")+  
   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
-        axis.text.y=element_blank())
+        axis.text.y=element_text())
 
 #Spatial differences info------
 
@@ -256,10 +263,12 @@ RECS2015 <- RECS2015 %>%
                           C = "Urban Cluster")))
 
 #dataframe of area and total energy
-Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION)
-colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division")
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate")
 
-#rough plot to see expenditure differences by density classification
+#Yearly expenditure differences by Division and Density-----
+
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df, `Yearly Electricity Costs`, rm= TRUE)
 
 Tot_Energy_area_df %>%
   arrange(`Yearly Electricity Costs`)%>%
@@ -277,16 +286,17 @@ Tot_Energy_area_df %>%
     aes(x = `Urban Density`,
         y = `Yearly Electricity Costs`,
         fill = fct_reorder(`Division`, `Yearly Electricity Costs`)))+
-  geom_boxplot(stat = "boxplot", position = "dodge")+
+  geom_boxplot(stat = "boxplot", 
+               position = "dodge")+
   labs(title = "Urban Density and Electricity Costs",
        fill= "Division")+
   theme(axis.text.x = element_text(size = 9, margin = margin(r=0)), 
-        axis.text.y=element_blank())+ 
+        axis.text.y=element_text())+ 
   scale_color_brewer(palette = "Pastel2")
 
 chisq.test(Tot_Energy_area_df[c(1,2)])
 
-#What are the energy costs (“DOLLAREL” variable) for homeowners based on the number of rooms (“TOTROOMS” variable)?
+#What are the energy costs (“DOLLAREL” variable) for homeowners based on the number of rooms (“TOTROOMS” variable)?-----
 
 house_size <- data.frame(RECS2015$DOLLAREL, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN)
 
@@ -392,6 +402,8 @@ ggplot(data = states) +
 colnames(states) <- c("long", "lat", "group", "order", "DIVISION", "subregion")
 
 # rename `Tot_Energy_area_df` columns
+#see line 263 ish
+
 colnames(Tot_Energy_area_df) <- c("Urban Type", "Elec cost", "DIVISION")
 
 # subsetting divisions to find their average energy cost --> will remove because aggregate works better
@@ -401,20 +413,22 @@ NewEngland_CostMean <- mean(Tot_Energy_NewEngland$`Elec cost`)
 Tot_Energy_MiddleAtlantic <- Tot_Energy_area_df[Tot_Energy_area_df$DIVISION == "middle_atlantic", ]
 MiddleAtlantic_CostMean <- mean(Tot_Energy_MiddleAtlantic$`Elec cost`)
 
-# Climate data
+# Climate data-----
 
 RECS2015$CLIMATE_REGION_PUB <- as.factor(RECS2015$CLIMATE_REGION_PUB)
+Tot_Energy_area_df$Climate
 
-plot(y = RECS2015$DOLLAREL,
-     x = RECS2015$CLIMATE_REGION_PUB)
-
-ggplot(RECS2015, aes(x = CLIMATE_REGION_PUB, y = DOLLAREL, fill = CLIMATE_REGION_PUB)) +
+Tot_Energy_area_df %>%
+  arrange(`Yearly Electricity Costs`)%>%
+  mutate(Climate = factor(Climate, levels = c("Hot-Dry/Mixed-Dry","Marine","Cold/Very Cold","Mixed-Humid","Hot-Humid")))%>%
+ggplot(aes(x = Climate,
+           y = `Yearly Electricity Costs`,
+           fill = Climate)) +
   geom_boxplot() +
-  xlab("Climate") +
-  ylab("Electricity Cost")
+  labs(title = "Yearly Electricity Expenditure by Climate")
 
 # Histogram of Electricity Costs
-ggplot(data=RECS2015, aes(DOLLAREL)) + 
+ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
   geom_histogram(breaks=seq(19, 8122, by = 100), 
                  col="black", 
                  fill="dark green", 
