@@ -264,19 +264,19 @@ colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "
 Tot_Energy_area_df %>%
   arrange(`Yearly Electricity Costs`)%>%
   mutate(Division = factor(Division, levels = c("New England",
-                            "Middle Atlantic",
-                           "East North Central",
-                           "West North Central",
-                           "South Atlantic",
-                           "East South Central",
-                           "West South Central",
-                           "Mountain North",
-                           "Mountain South",
-                           "Pacific")))%>%
+                                                "Middle Atlantic",
+                                                "East North Central",
+                                                "West North Central",
+                                                "South Atlantic",
+                                                "East South Central",
+                                                "West South Central",
+                                                "Mountain North",
+                                                "Mountain South",
+                                                "Pacific")))%>%
   ggplot(
-       aes(x = `Urban Density`,
-           y = `Yearly Electricity Costs`,
-           fill = fct_reorder(`Division`, `Yearly Electricity Costs`)))+
+    aes(x = `Urban Density`,
+        y = `Yearly Electricity Costs`,
+        fill = fct_reorder(`Division`, `Yearly Electricity Costs`)))+
   geom_boxplot(stat = "boxplot", position = "dodge")+
   labs(title = "Urban Density and Electricity Costs",
        fill= "Division")+
@@ -394,10 +394,30 @@ colnames(states) <- c("long", "lat", "group", "order", "DIVISION", "subregion")
 # rename `Tot_Energy_area_df` columns
 colnames(Tot_Energy_area_df) <- c("Urban Type", "Elec cost", "DIVISION")
 
-# subsetting divisions to find their average energy cost
+# subsetting divisions to find their average energy cost --> will remove because aggregate works better
 Tot_Energy_NewEngland <- Tot_Energy_area_df[Tot_Energy_area_df$DIVISION == "new_england", ]
 NewEngland_CostMean <- mean(Tot_Energy_NewEngland$`Elec cost`)
 
 Tot_Energy_MiddleAtlantic <- Tot_Energy_area_df[Tot_Energy_area_df$DIVISION == "middle_atlantic", ]
 MiddleAtlantic_CostMean <- mean(Tot_Energy_MiddleAtlantic$`Elec cost`)
 
+# Climate data
+
+RECS2015$CLIMATE_REGION_PUB <- as.factor(RECS2015$CLIMATE_REGION_PUB)
+
+plot(y = RECS2015$DOLLAREL,
+     x = RECS2015$CLIMATE_REGION_PUB)
+
+ggplot(RECS2015, aes(x = CLIMATE_REGION_PUB, y = DOLLAREL, fill = CLIMATE_REGION_PUB)) +
+  geom_boxplot() +
+  xlab("Climate") +
+  ylab("Electricity Cost")
+
+# Histogram of Electricity Costs
+ggplot(data=RECS2015, aes(DOLLAREL)) + 
+  geom_histogram(breaks=seq(19, 8122, by = 100), 
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Electricity Cost", y="Frequency") +
+  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
