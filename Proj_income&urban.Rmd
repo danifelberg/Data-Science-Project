@@ -1,0 +1,108 @@
+---
+title: "Proj_income"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(readr)
+library(ggplot2)
+library(survey)
+library(dplyr)
+library(ggmap)
+library(maps)
+library(mapdata)
+library(formattable)
+library(ezids)
+```
+
+```{r}
+RECS2015 <- read.csv("recs2015_public_v4.csv", header=TRUE, sep=",")
+```
+```{r}
+Income<-as.factor(RECS2015$MONEYPY)
+UTYPE<-as.factor(RECS2015$UATYP10)
+Cost<-RECS2015$DOLLAREL
+Comsumption<-RECS2015$KWH
+newRECS2015<-data.frame(Cost,Income,Comsumption, UTYPE)
+str(Income)
+str(UTYPE)
+summary(newRECS2015)
+
+```
+
+
+```{r}
+newREC2015 <- newRECS2015 %>%
+  mutate(Income = as.factor(case_when(Income == 1 ~ "Less than $20,000",
+                                       Income == 2 ~ "$20,000 - $39,999",
+                                       Income == 3 ~ "$40,000 - $59,999",
+                                       Income == 4 ~ "$60,000 to $79,999",
+                                       Income == 5 ~ "$80,000 to $99,999",
+                                       Income == 6 ~ "$100,000 to $119,999",
+                                       Income == 7 ~ "$120,000 to $139,999",
+                                       Income == 8 ~ "$140,000 or more")))
+
+ggplot(data=newRECS2015, aes(x =Income, y=Cost, color=Income)) + 
+  geom_boxplot( outlier.shape=16, outlier.size=1.5) +
+  labs(title = "Annual Electricity Cost Between Different Income Level ", x = "Income level",y = "Annual Electricity Cost")+
+scale_colour_discrete("Income level",labels = c("1: Less than $20,000","2: $20,000 - $39,999", "3: $40,000 - $59,999", "4: $60,000 - $79,999", "5: $80,000 - $99,999", "6: $100,000 - $119,999", "7: $120,000 - $139,999", "8: $140,000 or more" ))
+
+```
+
+
+#```{r}
+#newRECS2015 %>%
+#  arrange(Cost)%>%
+#  mutate(Income = factor(Income, 
+#                          levels = c("Less than $20,000",
+#                                     "$20,000 - $39,999",
+#                                     "$40,000 -$59,999",
+#                                     "$60,000 - $79,999",
+#                                     "$80,000 - $99,999", 
+#                                     "$100,000 - $119,999", 
+#                                     "$120,000 - $139,999",
+#                                     "$140,000 or more")))%>%
+#ggplot(aes(x =Income,y=Cost, color = Income)) + 
+#  geom_boxplot(stat = "boxplot") +
+#  labs(title = "Annual  Electricity Cost Between Different Income Level ", 
+#       x = "Income level",
+#       y = "Annual Electricity Cost")+  
+#  theme(axis.text.x = element_text(angle = 45, size = 9, margin = #margin(r=0)),axis.text.y=element_blank())
+
+
+#```
+```{r}
+Income_Out<-outlierKD2(RECS2015,Cost, rm=T)
+#Income_Out1<-outlierKD2(RECS2015,KWH, rm=T)
+```
+```{r}
+income_aov<-aov(Cost~Income, data=newRECS2015)
+#income_K_aov<-aov(KWH~MONEYPY, data=RECS2015)
+summary(income_aov)
+#summary(income_K_aov)
+```
+
+---Urban type
+```{r}
+ggplot(data=RECS2015, aes(x =as.factor(UATYP10),y=DOLLAREL,color=UATYP10)) + 
+  geom_boxplot(outlier.shape=16, outlier.size=1.5) +
+  labs(title = "Annual Electricity Cost  Between Different Urban Type ", x = "Urban Type",y = "Annual Electricity Cost") + scale_colour_discrete("Urban Tpye",labels = c("C: Urban Cluster","R: Rural", "U: Urban Area" ))
+```
+```{r}
+Urban_Out<-outlierKD2(newRECS2015,Cost, rm=T)
+```
+```{r}
+Urban_aov<-aov(Cost~UTYPE, data=newRECS2015)
+summary(Urban_aov)
+
+```
+
+
+
+
