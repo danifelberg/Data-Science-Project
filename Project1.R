@@ -266,10 +266,38 @@ RECS2015 <- RECS2015 %>%
 Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB)
 colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate")
 
-#Yearly expenditure differences by Division and Density-----
 
+
+### Histogram and Q-Q Plot before outliers are removed:
+ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(19, 8122, by = 100), 
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Electricity Cost", y="Frequency") +
+  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
+
+qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
+qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
+
+
+### Removing outliers:
 Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df, `Yearly Electricity Costs`, rm= TRUE)
 
+### Histogram and Q-Q Plots again after removing outliers:
+
+ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(19, 8122, by = 100), 
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Electricity Cost", y="Frequency") +
+  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
+
+qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
+qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
+
+#Yearly expenditure differences by Division and Density-----
 Tot_Energy_area_df %>%
   arrange(`Yearly Electricity Costs`)%>%
   mutate(Division = factor(Division, levels = c("New England",
@@ -427,11 +455,15 @@ ggplot(aes(x = Climate,
   geom_boxplot() +
   labs(title = "Yearly Electricity Expenditure by Climate")
 
-# Histogram of Electricity Costs
-ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
-  geom_histogram(breaks=seq(19, 8122, by = 100), 
-                 col="black", 
-                 fill="dark green", 
-                 alpha = .7) + # opacity
-  labs(x="Electricity Cost", y="Frequency") +
-  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
+# Cross-tab of Divisions and Climates
+xkabledply(table(Tot_Energy_area_df$Division, Tot_Energy_area_df$Climate), "Cross-Tab of Division and Climate")
+
+# Stacked bar graph comparing share of climates by each US Census Division
+ggplot(Tot_Energy_area_df, aes(fill=`Climate`, y="Percent", x=Division)) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(title = "Census Division and Climate",
+       ylab = "Percent") +
+  theme(axis.text.x = element_text(angle = 45, size = 11, margin = margin(r=0)),
+        axis.text.y=element_blank())
+
+# Climate vs. Energy Costs, Controlling for Census Division
