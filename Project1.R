@@ -459,11 +459,25 @@ ggplot(aes(x = Climate,
 xkabledply(table(Tot_Energy_area_df$Division, Tot_Energy_area_df$Climate), "Cross-Tab of Division and Climate")
 
 # Stacked bar graph comparing share of climates by each US Census Division
-ggplot(Tot_Energy_area_df, aes(fill=`Climate`, y="Percent", x=Division)) +
+Tot_Energy_area_df %>%
+  mutate(Division = factor(Division, levels = c("Pacific","Mountain North","East North Central","West North Central", "Middle Atlantic", "New England", "Mountain South", "East South Central", "West South Central", "South Atlantic")))%>%
+  ggplot(aes(fill=`Climate`, y="Percent", x=Division)) +
   geom_bar(position = "fill", stat = "identity") +
   labs(title = "Census Division and Climate",
        ylab = "Percent") +
   theme(axis.text.x = element_text(angle = 45, size = 11, margin = margin(r=0)),
         axis.text.y=element_blank())
 
+# Yearly Energy Expenditures based on Census Division
+Tot_Energy_area_df %>%
+  arrange(`Yearly Electricity Costs`)%>%
+  mutate(Division = factor(Division, levels = c("Pacific","Mountain North","East North Central","West North Central", "Middle Atlantic", "New England", "Mountain South", "East South Central", "West South Central", "South Atlantic")))%>%
+  ggplot(aes(x = Division,
+             y = `Yearly Electricity Costs`,
+             fill = Division)) +
+  geom_boxplot() +
+  labs(title = "Yearly Electricity Expenditure by Division") +
+  theme(axis.text.x = element_blank())
+
 # Climate vs. Energy Costs, Controlling for Census Division
+
