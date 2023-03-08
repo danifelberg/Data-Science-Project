@@ -3,7 +3,7 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer", "reshape2")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -13,6 +13,7 @@ library(formattable)
 library(forcats)
 library(RColorBrewer)
 library(ezids)
+library(reshape2)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -38,15 +39,14 @@ svytotal(~NG_MAINSPACEHEAT, des)
 
 #Appliances info ----
 
-
 app_cost <- data.frame(RECS2015$DOLLAREL,RECS2015$DOLELSPH,RECS2015$DOLELCOL,
-                       RECS2015$DOLELWTH,RECS2015$DOLELRFG,RECS2015$DOLELFRZ,
-                       RECS2015$DOLELCOK,RECS2015$DOLELMICRO,RECS2015$DOLELCW,
-                       RECS2015$DOLELCDR,RECS2015$DOLELDWH,RECS2015$DOLELLGT,
-                       RECS2015$DOLELTVREL,RECS2015$DOLELAHUHEAT,RECS2015$DOLELAHUCOL,
-                       RECS2015$DOLELEVAPCOL,RECS2015$DOLELCFAN,RECS2015$DOLELDHUM,
-                       RECS2015$DOLELHUM,RECS2015$DOLELPLPMP,RECS2015$DOLELHTBPMP,
-                       RECS2015$DOLELHTBHEAT,RECS2015$DOLELNEC)
+                   RECS2015$DOLELWTH,RECS2015$DOLELRFG,RECS2015$DOLELFRZ,
+                   RECS2015$DOLELCOK,RECS2015$DOLELMICRO,RECS2015$DOLELCW,
+                   RECS2015$DOLELCDR,RECS2015$DOLELDWH,RECS2015$DOLELLGT,
+                   RECS2015$DOLELTVREL,RECS2015$DOLELAHUHEAT,RECS2015$DOLELAHUCOL,
+                   RECS2015$DOLELEVAPCOL,RECS2015$DOLELCFAN,RECS2015$DOLELDHUM,
+                   RECS2015$DOLELHUM,RECS2015$DOLELPLPMP,RECS2015$DOLELHTBPMP,
+                   RECS2015$DOLELHTBHEAT,RECS2015$DOLELNEC)
 
 series <- data.frame(rep(1, nrow(app_cost)))
 Spaceheating<- RECS2015$DOLELSPH
@@ -67,34 +67,34 @@ Fan<-RECS2015$DOLELCFAN
 
 
 app_cost <- data.frame(
-  Spaceheating, 
-  AC, 
-  Waterheating,
-  Light, 
-  TV,
-  Dishwasher,
-  Refrigerator, 
-  Freezer, 
-  Cooking, 
-  Microwave, 
-  Clothewasher, 
-  Clothedryer,
-  Fan)
+                       Spaceheating, 
+                       AC, 
+                       Waterheating,
+                       Light, 
+                       TV,
+                       Dishwasher,
+                       Refrigerator, 
+                       Freezer, 
+                       Cooking, 
+                       Microwave, 
+                       Clothewasher, 
+                       Clothedryer,
+                       Fan)
 
 colnames(app_cost) <- c(
-  "Spaceheating", 
-  "AC", 
-  "Waterheating",
-  "Light", 
-  "TV",
-  "Dishwasher",
-  "Refrigerator", 
-  "Freezer", 
-  "Cooking", 
-  "Microwave", 
-  "Clothewasher", 
-  "Clothedryer",
-  "Fan")
+                        "Spaceheating", 
+                         "AC", 
+                         "Waterheating",
+                         "Light", 
+                         "TV",
+                         "Dishwasher",
+                         "Refrigerator", 
+                         "Freezer", 
+                         "Cooking", 
+                         "Microwave", 
+                         "Clothewasher", 
+                         "Clothedryer",
+                         "Fan")
 
 app_cost <- outlierKD2(app_cost, (Spaceheating), rm =TRUE)
 app_cost <- outlierKD2(app_cost, (AC), rm =TRUE) 
@@ -111,36 +111,36 @@ app_cost <- outlierKD2(app_cost, (Clothedryer), rm =TRUE)
 app_cost <- outlierKD2(app_cost, (Fan), rm =TRUE)
 
 app_cost["series"] <- rep(1, nrow(app_cost))
-
+                      
 test <- melt(app_cost,  id.vars = 'series', variable.name = 'index')
 
 test %>%
   arrange(index)%>%
   mutate(index = factor(index, levels = c("series",
-                                          "Spaceheating", 
-                                          "AC", 
-                                          "Waterheating",
-                                          "Light", 
-                                          "TV",
-                                          "Clothedryer",
-                                          "Refrigerator", 
-                                          "Fan",
-                                          "Freezer", 
-                                          "Cooking", 
-                                          "Microwave", 
-                                          "Dishwasher",
-                                          "Clothewasher"))) %>%
-  ggplot(
-    aes(x = series,
-        y = value,
-        fill = index))+ 
+                                         "Spaceheating", 
+                                         "AC", 
+                                         "Waterheating",
+                                         "Light", 
+                                         "TV",
+                                         "Clothedryer",
+                                         "Refrigerator", 
+                                         "Fan",
+                                         "Freezer", 
+                                         "Cooking", 
+                                         "Microwave", 
+                                         "Dishwasher",
+                                         "Clothewasher"))) %>%
+ggplot(
+       aes(x = series,
+           y = value,
+           fill = index))+ 
   geom_bar(stat = "identity", 
            position = "dodge") +
   labs(title = "Annual Electricity Cost of Different Appliances", 
        x = "Appliances",
        y = "Annual Electricity Cost")+  
   theme(axis.text.x = element_blank())
-
+  
 #Central Air------
 #Electricity costs for space heating (“DOLELSPH” variable),
 
@@ -241,6 +241,26 @@ test <- table(droplevels(nona_central_air_df)$`Heat Pump Status`,
 
 chisq_hp_inc <- chisq.test(test)
 
+#other common appliances----- ----
+#Electricity costs for water heating (“DOLELWTH” variable)----
+
+RECS2015$DOLELWTH <- currency(RECS2015$DOLELWTH,
+                              symbol = "$",
+                              digits = 0L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+svytotal(~DOLELWTH, des)
+
+#Electricity costs for all refrigerators (“DOLELRFG” variable),
+
+RECS2015$DOLELRFG <- currency(RECS2015$DOLELRFG,
+                              symbol = "$",
+                              digits = 0L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+svytotal(~DOLELRFG, des)
 
 #Income and Energy Expenditure info ------
 #Annual gross household income for the last year (“MONEYPY” variable),
@@ -349,38 +369,10 @@ RECS2015 <- RECS2015 %>%
 Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB)
 colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate")
 
+#Yearly expenditure differences by Division and Density-----
 
-
-### Histogram and Q-Q Plot before outliers are removed:
-ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
-  geom_histogram(breaks=seq(19, 8122, by = 100), 
-                 col="black", 
-                 fill="dark green", 
-                 alpha = .7) + # opacity
-  labs(x="Electricity Cost", y="Frequency") +
-  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
-
-qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
-qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
-
-
-### Removing outliers:
 Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df, `Yearly Electricity Costs`, rm= TRUE)
 
-### Histogram and Q-Q Plots again after removing outliers:
-
-ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
-  geom_histogram(breaks=seq(19, 8122, by = 100), 
-                 col="black", 
-                 fill="dark green", 
-                 alpha = .7) + # opacity
-  labs(x="Electricity Cost", y="Frequency") +
-  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
-
-qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
-qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
-
-#Yearly expenditure differences by Division and Density-----
 Tot_Energy_area_df %>%
   arrange(`Yearly Electricity Costs`)%>%
   mutate(Division = factor(Division, levels = c("New England",
@@ -416,15 +408,21 @@ plot(x = log(house_size$RECS2015.TOTSQFT_EN),
      y = log(house_size$RECS2015.DOLLAREL))
 
 
-# WORK IN PROGRESS PROJECT 2Is Electric heating and cooling costs respective to certain climates (“CLIMATE_REGION_PUB”)?------
+#Is Electric heating and cooling costs respective to certain climates (“CLIMATE_REGION_PUB”)?
 
 hist(log(RECS2015$TOTSQFT_EN))
 hist(log(RECS2015$DOLLAREL))
 
+
 heatpump_lm <- lm(CENACHP ~ TOTSQFT_EN + DOLLAREL + KWHCOL + BTUELCOL, data = RECS2015)
 
 summary(heatpump_lm)
+
 plot(heatpump_lm)
+
+
+
+
 
 #Mapping the data------
 #relevant code for us to get started
@@ -445,77 +443,68 @@ ggplot(data = states) +
 # census divisions
 
 states <- states %>%
-  mutate(region = as.factor(case_when(region == "connecticut" ~ "New England",
-                                      region == "maine" ~ "New England",
-                                      region == "massachusetts" ~ "New England",
-                                      region == "new hampshire" ~ "New England",
-                                      region == "rhode island" ~ "New England",
-                                      region == "vermont" ~ "New England",
-                                      region == "new jersey" ~ "Middle Atlantic",
-                                      region == "new york" ~ "Middle Atlantic",
-                                      region == "pennsylvania" ~ "Middle Atlantic",
-                                      region == "indiana" ~ "East North Central",
-                                      region == "illinois" ~ "East North Central",
-                                      region == "michigan" ~ "East North Central",
-                                      region == "ohio" ~ "East North Central",
-                                      region == "wisconsin" ~ "East North Central",
-                                      region == "iowa" ~ "West North Central",
-                                      region == "kansas" ~ "West North Central",
-                                      region == "minnesota" ~ "West North Central",
-                                      region == "missouri" ~ "West North Central",
-                                      region == "nebraska" ~ "West North Central",
-                                      region == "north dakota" ~ "West North Central",
-                                      region == "south dakota" ~ "West North Central",
-                                      region == "delaware" ~ "South Atlantic",
-                                      region == "district of columbia" ~ "South Atlantic",
-                                      region == "florida" ~ "South Atlantic",
-                                      region == "georgia" ~ "South Atlantic",
-                                      region == "maryland" ~ "South Atlantic",
-                                      region == "north carolina" ~ "South Atlantic",
-                                      region == "south carolina" ~ "South Atlantic",
-                                      region == "virginia" ~ "South Atlantic",
-                                      region == "west virginia" ~ "South Atlantic",
-                                      region == "alabama" ~ "East South Central",
-                                      region == "kentucky" ~ "East South Central",
-                                      region == "mississippi" ~ "East South Central",
-                                      region == "tennessee" ~ "East South Central",
-                                      region == "arkansas" ~ "West South Central",
-                                      region == "louisiana" ~ "West South Central",
-                                      region == "oklahoma" ~ "West South Central",
-                                      region == "texas" ~ "West South Central",
-                                      region == "arizona" ~ "Mountain",
-                                      region == "colorado" ~ "Mountain",
-                                      region == "idaho" ~ "Mountain",
-                                      region == "new mexico" ~ "Mountain",
-                                      region == "montana" ~ "Mountain",
-                                      region == "utah" ~ "Mountain",
-                                      region == "nevada" ~ "Mountain",
-                                      region == "wyoming" ~ "Mountain",
-                                      region == "alaska" ~ "Pacific",
-                                      region == "california" ~ "Pacific",
-                                      region == "hawaii" ~ "Pacific",
-                                      region == "oregon" ~ "Pacific",
-                                      region == "washington" ~ "Pacific",)))
+  mutate(region = as.factor(case_when(region == "connecticut" ~ "new_england",
+                                      region == "maine" ~ "new_england",
+                                      region == "massachusetts" ~ "new_england",
+                                      region == "new hampshire" ~ "new_england",
+                                      region == "rhode island" ~ "new_england",
+                                      region == "vermont" ~ "new_england",
+                                      region == "new jersey" ~ "middle_atlantic",
+                                      region == "new york" ~ "middle_atlantic",
+                                      region == "pennsylvania" ~ "middle_atlantic",
+                                      region == "indiana" ~ "east_north_central",
+                                      region == "illinois" ~ "east_north_central",
+                                      region == "michigan" ~ "east_north_central",
+                                      region == "ohio" ~ "east_north_central",
+                                      region == "wisconsin" ~ "east_north_central",
+                                      region == "iowa" ~ "west_north_central",
+                                      region == "kansas" ~ "west_north_central",
+                                      region == "minnesota" ~ "west_north_central",
+                                      region == "missouri" ~ "west_north_central",
+                                      region == "nebraska" ~ "west_north_central",
+                                      region == "north dakota" ~ "west_north_central",
+                                      region == "south dakota" ~ "west_north_central",
+                                      region == "delaware" ~ "south_atlantic",
+                                      region == "district of columbia" ~ "south_atlantic",
+                                      region == "florida" ~ "south_atlantic",
+                                      region == "georgia" ~ "south_atlantic",
+                                      region == "maryland" ~ "south_atlantic",
+                                      region == "north carolina" ~ "south_atlantic",
+                                      region == "south carolina" ~ "south_atlantic",
+                                      region == "virginia" ~ "south_atlantic",
+                                      region == "west virginia" ~ "south_atlantic",
+                                      region == "alabama" ~ "east_south_central",
+                                      region == "kentucky" ~ "east_south_central",
+                                      region == "mississippi" ~ "east_south_central",
+                                      region == "tennessee" ~ "east_south_central",
+                                      region == "arkansas" ~ "west_south_central",
+                                      region == "louisiana" ~ "west_south_central",
+                                      region == "oklahoma" ~ "west_south_central",
+                                      region == "texas" ~ "west_south_central",
+                                      region == "arizona" ~ "mountain",
+                                      region == "colorado" ~ "mountain",
+                                      region == "idaho" ~ "mountain",
+                                      region == "new mexico" ~ "mountain",
+                                      region == "montana" ~ "mountain",
+                                      region == "utah" ~ "mountain",
+                                      region == "nevada" ~ "mountain",
+                                      region == "wyoming" ~ "mountain",
+                                      region == "alaska" ~ "pacific",
+                                      region == "california" ~ "pacific",
+                                      region == "hawaii" ~ "pacific",
+                                      region == "oregon" ~ "pacific",
+                                      region == "washington" ~ "pacific",)))
 
-# Plotting the US Census Divisions
-divisions_map <- ggplot(data = states) + 
+ggplot(data = states) + 
   geom_polygon(aes(x = long, 
                    y = lat, 
                    fill = region, 
                    group = group), 
                color = "white") + 
-  coord_fixed(1.3)
-
-ditch_the_axes <- theme(
-  axis.text = element_blank(),
-  axis.line = element_blank(),
-  axis.ticks = element_blank(),
-  panel.border = element_blank(),
-  panel.grid = element_blank(),
-  axis.title = element_blank()
-)
-
-divisions_map + ditch_the_axes
+  coord_fixed(1.3) +
+  guides(fill=FALSE)+ 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                                     panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 # rename "region" column from `states` dataframe to match `RECS2015` column name
 colnames(states) <- c("long", "lat", "group", "order", "DIVISION", "subregion")
@@ -546,111 +535,11 @@ ggplot(aes(x = Climate,
   geom_boxplot() +
   labs(title = "Yearly Electricity Expenditure by Climate")
 
-# ANOVA Test Prep (Subsetting Climates)
-HotDry_MixedDry <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Hot-Dry/Mixed-Dry", ]
-HotDry_MixedDry <- na.omit(HotDry_MixedDry)
-Marine <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Marine", ]
-Marine <- na.omit(Marine)
-Cold_VeryCold <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Cold/Very Cold", ]
-Cold_VeryCold <- na.omit(Cold_VeryCold)
-Mixed_Humid <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Mixed-Humid", ]
-Mixed_Humid <- na.omit(Mixed_Humid)
-Hot_Humid <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Hot-Humid", ]
-Hot_Humid <- na.omit(Hot_Humid)
-
-# ANOVA Test Prep (Histogram of each Climate)
-hist_HotDry_MixedDry <- ggplot(data=HotDry_MixedDry, aes(`Yearly Electricity Costs`)) + 
-  geom_histogram(breaks=seq(18.7, 3354, by = 100),
+# Histogram of Electricity Costs
+ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(19, 8122, by = 100), 
                  col="black", 
                  fill="dark green", 
                  alpha = .7) + # opacity
-  labs(x="Yearly Electricity Costs", y="Frequency") +
-  labs(title="Hot-Dry/Mixed-Dry")
-
-hist_Marine <- ggplot(data=Marine, aes(`Yearly Electricity Costs`)) + 
-  geom_histogram(breaks=seq(146, 3271, by = 100),
-                 col="black", 
-                 fill="dark green", 
-                 alpha = .7) + # opacity
-  labs(x="Yearly Electricity Costs", y="Frequency") +
-  labs(title="Marine")
-
-hist_Cold_VeryCold <- ggplot(data=Cold_VeryCold, aes(`Yearly Electricity Costs`)) + 
-  geom_histogram(breaks=seq(48, 3325, by = 100),
-                 col="black", 
-                 fill="dark green", 
-                 alpha = .7) + # opacity
-  labs(x="Yearly Electricity Costs", y="Frequency") +
-  labs(title="Cold/Very Cold")
-
-hist_Mixed_Humid <- ggplot(data=Mixed_Humid, aes(`Yearly Electricity Costs`)) + 
-  geom_histogram(breaks=seq(219, 3355, by = 100),
-                 col="black", 
-                 fill="dark green", 
-                 alpha = .7) + # opacity
-  labs(x="Yearly Electricity Costs", y="Frequency") +
-  labs(title="Mixed-Humid")
-
-hist_Hot_Humid <- ggplot(data=Hot_Humid, aes(`Yearly Electricity Costs`)) + 
-  geom_histogram(breaks=seq(60.5, 3355, by = 100),
-                 col="black", 
-                 fill="dark green", 
-                 alpha = .7) + # opacity
-  labs(x="Yearly Electricity Costs", y="Frequency") +
-  labs(title="Hot-Humid")
-
-library(gridExtra)
-
-grid.arrange(hist_HotDry_MixedDry, hist_Marine, hist_Cold_VeryCold, hist_Mixed_Humid, hist_Hot_Humid, ncol=3)
-
-# ANOVA Test (Climate)
-anovaCli = aov(`Yearly Electricity Costs` ~ Climate, data = Tot_Energy_area_df)
-xkabledply(anovaCli, title = "ANOVA result summary")
-
-# ANOVA Test (Division)
-anovaDiv = aov(`Yearly Electricity Costs` ~ Division, data = Tot_Energy_area_df)
-xkabledply(anovaDiv, title = "ANOVA result summary")
-
-# Cross-tab of Divisions and Climates
-xkabledply(table(Tot_Energy_area_df$Division, Tot_Energy_area_df$Climate), "Cross-Tab of Division and Climate")
-
-# Stacked bar graph comparing share of climates by each US Census Division
-Tot_Energy_area_df %>%
-  mutate(Division = factor(Division, levels = c("Pacific","Mountain North","East North Central","West North Central", "Middle Atlantic", "New England", "Mountain South", "East South Central", "West South Central", "South Atlantic")))%>%
-  ggplot(aes(fill=`Climate`, y="Percent", x=Division)) +
-  geom_bar(position = "fill", stat = "identity") +
-  labs(title = "Census Division and Climate",
-       ylab = "Percent") +
-  theme(axis.text.x = element_text(angle = 45, size = 11, margin = margin(r=0)),
-        axis.text.y=element_blank())
-
-# Yearly Energy Expenditures based on Census Division
-Tot_Energy_area_df %>%
-  arrange(`Yearly Electricity Costs`)%>%
-  mutate(Division = factor(Division, levels = c("Pacific","Mountain North","East North Central","West North Central", "Middle Atlantic", "New England", "Mountain South", "East South Central", "West South Central", "South Atlantic")))%>%
-  ggplot(aes(x = Division,
-             y = `Yearly Electricity Costs`,
-             fill = Division)) +
-  geom_boxplot() +
-  labs(title = "Yearly Electricity Expenditure by Division") +
-  theme(axis.text.x = element_blank())
-
-# Climate vs. Energy Costs, Controlling for Census Division
-
-
-
-
-
-
-# Sean's adjusted graph
-RECS2015$CLIMATE_REGION_PUB <- as.factor(RECS2015$CLIMATE_REGION_PUB)
-Tot_Energy_area_df$Climate
-
-Tot_Energy_area_df %>%
-  arrange(`Yearly Electricity Costs`)%>%
-  mutate(Climate = factor(Climate, levels = c("Hot-Dry/Mixed-Dry","Marine","Cold/Very Cold","Mixed-Humid","Hot-Humid")))%>%
-  ggplot(aes(x = Climate,
-             y = `Yearly Electricity Costs`,
-             fill = Climate)) +
-  geom_boxplot() +
-  labs(title = "Yearly Electricity Expenditure by Climate")
+  labs(x="Electricity Cost", y="Frequency") +
+  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
