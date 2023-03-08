@@ -466,6 +466,71 @@ ggplot(aes(x = Climate,
   geom_boxplot() +
   labs(title = "Yearly Electricity Expenditure by Climate")
 
+# ANOVA Test Prep (Subsetting Climates)
+HotDry_MixedDry <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Hot-Dry/Mixed-Dry", ]
+HotDry_MixedDry <- na.omit(HotDry_MixedDry)
+Marine <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Marine", ]
+Marine <- na.omit(Marine)
+Cold_VeryCold <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Cold/Very Cold", ]
+Cold_VeryCold <- na.omit(Cold_VeryCold)
+Mixed_Humid <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Mixed-Humid", ]
+Mixed_Humid <- na.omit(Mixed_Humid)
+Hot_Humid <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Hot-Humid", ]
+Hot_Humid <- na.omit(Hot_Humid)
+
+# ANOVA Test Prep (Histogram of each Climate)
+hist_HotDry_MixedDry <- ggplot(data=HotDry_MixedDry, aes(`Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(18.7, 3354, by = 100),
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Yearly Electricity Costs", y="Frequency") +
+  labs(title="Hot-Dry/Mixed-Dry")
+
+hist_Marine <- ggplot(data=Marine, aes(`Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(146, 3271, by = 100),
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Yearly Electricity Costs", y="Frequency") +
+  labs(title="Marine")
+
+hist_Cold_VeryCold <- ggplot(data=Cold_VeryCold, aes(`Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(48, 3325, by = 100),
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Yearly Electricity Costs", y="Frequency") +
+  labs(title="Cold/Very Cold")
+
+hist_Mixed_Humid <- ggplot(data=Mixed_Humid, aes(`Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(219, 3355, by = 100),
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Yearly Electricity Costs", y="Frequency") +
+  labs(title="Mixed-Humid")
+
+hist_Hot_Humid <- ggplot(data=Hot_Humid, aes(`Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(60.5, 3355, by = 100),
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Yearly Electricity Costs", y="Frequency") +
+  labs(title="Hot-Humid")
+
+library(gridExtra)
+
+grid.arrange(hist_HotDry_MixedDry, hist_Marine, hist_Cold_VeryCold, hist_Mixed_Humid, hist_Hot_Humid, ncol=3)
+
+# ANOVA Test (Climate)
+anovaCli = aov(`Yearly Electricity Costs` ~ Climate, data = Tot_Energy_area_df)
+xkabledply(anovaCli, title = "ANOVA result summary")
+
+# ANOVA Test (Division)
+anovaDiv = aov(`Yearly Electricity Costs` ~ Division, data = Tot_Energy_area_df)
+xkabledply(anovaDiv, title = "ANOVA result summary")
+
 # Cross-tab of Divisions and Climates
 xkabledply(table(Tot_Energy_area_df$Division, Tot_Energy_area_df$Climate), "Cross-Tab of Division and Climate")
 
