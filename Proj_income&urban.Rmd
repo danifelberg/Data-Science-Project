@@ -24,18 +24,65 @@ library(ezids)
 ```{r}
 RECS2015 <- read.csv("recs2015_public_v4.csv", header=TRUE, sep=",")
 ```
+
 ```{r}
-Income<-as.factor(RECS2015$MONEYPY)
-UTYPE<-as.factor(RECS2015$UATYP10)
-Cost<-RECS2015$DOLLAREL
-Comsumption<-RECS2015$KWH
-newRECS2015<-data.frame(Cost,Income,Comsumption, UTYPE)
+appcost=data.frame(RECS2015$DOLLAREL,RECS2015$DOLELSPH,RECS2015$DOLELCOL,
+                RECS2015$DOLELWTH,RECS2015$DOLELRFG,RECS2015$DOLELFRZ,
+                RECS2015$DOLELCOK,RECS2015$DOLELMICRO,RECS2015$DOLELCW,
+                RECS2015$DOLELCDR,RECS2015$DOLELDWH,RECS2015$DOLELLGT,
+                RECS2015$DOLELTVREL,RECS2015$DOLELAHUHEAT,RECS2015$DOLELAHUCOL,
+                RECS2015$DOLELEVAPCOL,RECS2015$DOLELCFAN,RECS2015$DOLELDHUM,
+                RECS2015$DOLELHUM,RECS2015$DOLELPLPMP,RECS2015$DOLELHTBPMP,
+                RECS2015$DOLELHTBHEAT,RECS2015$DOLELNEC)
+summary(appcost)
+```
+```{r}
+Spaceheating<-mean(RECS2015$DOLELSPH)
+AC<-mean(RECS2015$DOLELCOL)
+Waterheating<-mean(RECS2015$DOLELWTH)
+refrigerator<-mean(RECS2015$DOLELRFG)
+Freezer<-mean(RECS2015$DOLELFRZ)
+Cooking<-mean(RECS2015$DOLELCOK)
+Microwave<-mean(RECS2015$DOLELMICRO)
+Clothewasher<-mean(RECS2015$DOLELCW)
+Clothedryer<-mean(RECS2015$DOLELCDR)
+Dishwasher<-mean(RECS2015$DOLELDWH)
+Light<-mean(RECS2015$DOLELLGT)
+TV<-mean(RECS2015$DOLELTVREL)
+Airhandlerheating<-mean(RECS2015$DOLELAHUHEAT)
+Airhandlercooling<-mean(RECS2015$DOLELAHUCOL)
+Fan<-mean(RECS2015$DOLELCFAN)
+
+meancost=c(Spaceheating, AC, Waterheating, refrigerator, Freezer, Cooking, Microwave, Clothewasher, Clothedryer, Dishwasher, Light, TV, Fan)
+a<-data.frame(name=c("Spaceheating", "AC", "Waterheating", "refrigerator", "Freezer", "Cooking", "Microwave", "Clothewasher", "Clothedryer","Dishwasher", "Light", "TV", "Fan"), val=meancost)
+ggplot(data=a,aes(x=name, y=val)) + 
+  geom_bar(stat="identity",fill="#f68060") +coord_flip()+
+  labs(title = "Annual Electricity Cost of Different Appliances ", x = "Appliances",y = "Annual Electricity Cost")
+#+scale_colour_discrete('name',lables=c("Spaceheating", "AC", "Waterheating", #"refrigerator", "Freezer", "Cooking", "Microwave", "Clothewasher", #"Clothedryer","Dishwasher", "Light", "TV"))
+```
+
+
+---Check the normality of electricity cost
+
+```{r}
+qqnorm(RECS2015$DOLLAREL, main="Electricity Cost ", ylab = "Cost", xlab= "")
+Cost_Out<-outlierKD2(RECS2015,DOLLAREL, rm=T)
+qqnorm(Cost_Out$DOLLAREL, main="Electricity Cost ", ylab = "Cost", xlab= "")
+```
+
+```{r}
+Income<-as.factor(Cost_Out$MONEYPY)
+UTYPE<-as.factor(Cost_Out$UATYP10)
+Cost<-Cost_Out$DOLLAREL
+#Comsumption<-Cost_Out$KWH
+newRECS2015<-data.frame(Cost,Income,UTYPE)
 str(Income)
 str(UTYPE)
 summary(newRECS2015)
 
 ```
 
+---Income VS. Electricity Expenditure
 
 ```{r}
 newREC2015 <- newRECS2015 %>%
@@ -77,32 +124,40 @@ scale_colour_discrete("Income level",labels = c("1: Less than $20,000","2: $20,0
 
 
 #```
+
 ```{r}
-Income_Out<-outlierKD2(RECS2015,Cost, rm=T)
-#Income_Out1<-outlierKD2(RECS2015,KWH, rm=T)
-```
-```{r}
-income_aov<-aov(Cost~Income, data=newRECS2015)
+df<-data.frame(Cost, Income,UTYPE)
+income_aov<-aov(Cost~Income, data=df)
 #income_K_aov<-aov(KWH~MONEYPY, data=RECS2015)
 summary(income_aov)
 #summary(income_K_aov)
 ```
 
----Urban type
+---Urban type vs Electricity Expenditure
 ```{r}
-ggplot(data=RECS2015, aes(x =as.factor(UATYP10),y=DOLLAREL,color=UATYP10)) + 
+ggplot(data=df, aes(x =UTYPE,y=Cost,color=UTYPE)) + 
   geom_boxplot(outlier.shape=16, outlier.size=1.5) +
   labs(title = "Annual Electricity Cost  Between Different Urban Type ", x = "Urban Type",y = "Annual Electricity Cost") + scale_colour_discrete("Urban Tpye",labels = c("C: Urban Cluster","R: Rural", "U: Urban Area" ))
 ```
+
 ```{r}
-Urban_Out<-outlierKD2(newRECS2015,Cost, rm=T)
-```
-```{r}
-Urban_aov<-aov(Cost~UTYPE, data=newRECS2015)
+
+Urban_aov<-aov(Cost~UTYPE, data=df)
 summary(Urban_aov)
 
 ```
 
+---Rooms VS. Electricity Expenditure
 
+
+```{r}
+#Rooms<-Cost_Out$TOTROOMS+Cost_Out$BEDROOMS
+Rooms<-as.factor(Cost_Out$TOTROOMS+Cost_Out$BEDROOMS)
+meanroom<-mean(Cost_Out$TOTROOMS+Cost_Out$BEDROOMS)
+ggplot(data=df, aes(x =Rooms,y=Cost,color=Rooms)) + 
+  geom_boxplot(outlier.shape=16, outlier.size=1.5) +
+  labs(title = "Annual Electricity Cost  of Different Numbers of Rooms ", x = "Numbers of Rooms",y = "Annual Electricity Cost")
+summary(Rooms)
+```
 
 
