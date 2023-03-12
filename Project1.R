@@ -3,7 +3,7 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -13,6 +13,8 @@ library(formattable)
 library(forcats)
 library(RColorBrewer)
 library(ezids)
+library(readxl)
+library(gridExtra)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -36,7 +38,7 @@ des <- svrepdesign(weights = sampweights,
 des
 svytotal(~NG_MAINSPACEHEAT, des)
 
-#Appliances info ----
+#PLOT General Appliances comparisons----
 
 
 app_cost <- data.frame(RECS2015$DOLLAREL,RECS2015$DOLELSPH,RECS2015$DOLELCOL,
@@ -182,24 +184,23 @@ RECS2015 %>%
   filter(EQUIPM == 4)%>%
   select(EQUIPM)
   
-
-#heatpump v. space heating costs plot
+#PLOT heatpump v. space heating costs----
 ggplot(central_air_df, 
        aes(x = `Heat Pump Status`,
            y = `Electricity Space Heating Costs`,
            fill = `Heat Pump Status`))+
   geom_bar(stat = "identity", position = "dodge")+
-  labs(title = "Space Heating Costs With and Without Heatpumps")
+  labs(title = "Yearly Space Heating Costs (in $) ")
 
-#heatpump v. ac costs plot
+#PLOT heatpump v. ac costs----
 ggplot(central_air_df, 
        aes(x = `Heat Pump Status`,
            y = `Electricity AC Costs`,
            fill = `Heat Pump Status`))+
   geom_bar(stat = "identity", position = "dodge")+
-  labs(title = "AC Costs With and Without Heatpumps")
+  labs(title = "Yearly AC Costs (in $)")
 
-#t-test for heatpumps v. spaceheater
+#T-Test for heatpumps v. spaceheater----
 
 ttest_central_air_df <- central_air_df %>%
   mutate(`alt` = central_air_df$`Heat Pump Status` == "Has a Heat Pump",
@@ -215,7 +216,7 @@ t.test(x = has_hp$`Electricity Space Heating Costs`,
        conf.level = 0.95,
        mu = mean(no_hp$`Electricity Space Heating Costs`))
 
-#t-test for heatpumps v. AC
+#T-Test for heatpumps v. AC-----
 
 no_hp <- ttest_central_air_df %>%
   filter(null == TRUE)
@@ -227,7 +228,7 @@ t.test(x = has_hp$`Electricity AC Costs`,
        conf.level = 0.95,
        mu = mean(no_hp$`Electricity AC Costs`))
 
-#chisquared test of heatpump related to income (removed NAs)
+#Chi Squared Test of heatpump related to income (removed NAs)-----
 nona_central_air_df <- central_air_df #make sure to load income section DF before running this
 nona_central_air_df <- subset(central_air_df, 
                               subset = `Heat Pump Status` != 'NA', 
@@ -241,8 +242,7 @@ test <- table(droplevels(nona_central_air_df)$`Heat Pump Status`,
 
 chisq_hp_inc <- chisq.test(test)
 
-
-#Income and Energy Expenditure info ------
+#----------------------Income and Energy Expenditure info----------------------- ------
 #Annual gross household income for the last year (“MONEYPY” variable),
 
 RECS2015 <- RECS2015 %>%
@@ -263,6 +263,7 @@ has_hp <- central_air_df %>%
 no_hp <- central_air_df %>%
   filter(`Heat Pump Status` == "No Heat Pump")
 
+#PLOT HP status by income----
 central_air_df %>%
   arrange(`Heat Pump Status`) %>%
   mutate(Income = factor(Income, levels = c("Less than $20,000",
@@ -282,11 +283,12 @@ central_air_df %>%
   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)),
         axis.text.y=element_blank()) #needs to fix income brackets to be ascending
 
-#boxplot of income and yearly energy costs
+#BOXPLOT of income and yearly energy costs----
 central_air_df["TotElectricity"] <- RECS2015$DOLLAREL
 
 central_air_df <- outlierKD2(central_air_df, TotElectricity, rm= TRUE)
 
+#PLOT income by total electricity usage-----
 central_air_df %>%
   arrange(`Heat Pump Status`) %>%
   mutate(Income = factor(Income, levels = c("Less than $20,000",
@@ -301,13 +303,13 @@ central_air_df %>%
              y = TotElectricity, 
              color = Income)) + 
   geom_boxplot(stat = "boxplot") +
-  labs(title = " Electricity Cost Between Different Income Level ", 
+  labs(title = "Yearly Electricity Cost by Income Level ", 
        x = "Income level",
-       y = "Yearly Electricity Cost (in Dollars)")+  
+       y = "Yearly Electricity Cost (in $)")+  
   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
         axis.text.y=element_text())
 
-#Spatial differences info------
+#Spatial Prep------
 
 #Preparing Census Regions 
 
@@ -333,9 +335,6 @@ RECS2015 <- RECS2015 %>%
                                        DIVISION == 9 ~ "Mountain South",
                                        DIVISION == 10 ~ "Pacific",)))
 
-RECS2015$DIVISION
-plot(RECS2015$DIVISION)
-
 #Electricity cost differences between urban and rural areas (“UATYP10” variable),
 
 #rename levels of area 
@@ -349,9 +348,7 @@ RECS2015 <- RECS2015 %>%
 Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB)
 colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate")
 
-
-
-### Histogram and Q-Q Plot before outliers are removed:
+#HISTOGRAM and Q-Q Plot before outliers are removed----
 ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
   geom_histogram(breaks=seq(19, 8122, by = 100), 
                  col="black", 
@@ -362,12 +359,11 @@ ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) +
 
 qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
 qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
-
 
 ### Removing outliers:
 Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df, `Yearly Electricity Costs`, rm= TRUE)
 
-### Histogram and Q-Q Plots again after removing outliers:
+#HISTOGRAM and Q-Q Plot again after removing outliers----
 
 ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
   geom_histogram(breaks=seq(19, 8122, by = 100), 
@@ -380,7 +376,7 @@ ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) +
 qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
 qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
 
-#Yearly expenditure differences by Division and Density-----
+#PLOT Yearly expenditure differences by Division and Density-----
 Tot_Energy_area_df %>%
   arrange(`Yearly Electricity Costs`)%>%
   mutate(Division = factor(Division, levels = c("New England",
@@ -407,16 +403,32 @@ Tot_Energy_area_df %>%
 
 chisq.test(Tot_Energy_area_df[c(1,2)])
 
-#What are the energy costs (“DOLLAREL” variable) for homeowners based on the number of rooms (“TOTROOMS” variable)?-----
+#REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
 house_size <- data.frame(RECS2015$DOLLAREL, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN)
+
+house_size <- outlierKD2(house_size, 
+                         house_size$RECS2015.TOTROOMS,
+                         rm = TRUE)
+
+house_size <- outlierKD2(house_size, 
+                         RECS2015.TOTSQFT_EN,
+                         rm = TRUE)
+summary(house_size$RECS2015.TOTROOMS)
+sd(house_size$RECS2015.TOTROOMS, na.rm = TRUE)
+summary(house_size$RECS2015.DOLLAREL)
+sd(house_size$RECS2015.DOLLAREL)
+
+summary(RECS2015$CENACHP)
+summary(RECS2015$MONEYPY)
+
 
 #rough plot for total squarefootage (x), and energy costs (y)
 plot(x = log(house_size$RECS2015.TOTSQFT_EN),
      y = log(house_size$RECS2015.DOLLAREL))
 
 
-# WORK IN PROGRESS PROJECT 2Is Electric heating and cooling costs respective to certain climates (“CLIMATE_REGION_PUB”)?------
+#effect of HP on central air costs
 
 hist(log(RECS2015$TOTSQFT_EN))
 hist(log(RECS2015$DOLLAREL))
@@ -426,8 +438,8 @@ heatpump_lm <- lm(CENACHP ~ TOTSQFT_EN + DOLLAREL + KWHCOL + BTUELCOL, data = RE
 summary(heatpump_lm)
 plot(heatpump_lm)
 
-#Mapping the data------
-#relevant code for us to get started
+#--------------------------Mapping the data-------------------------------------
+#Load USA states----
 
 usa <- map_data("usa")
 
@@ -497,7 +509,7 @@ states <- states %>%
                                       region == "oregon" ~ "Pacific",
                                       region == "washington" ~ "Pacific",)))
 
-# Plotting the US Census Divisions
+#PLOT the US Census Divisions------
 divisions_map <- ggplot(data = states) + 
   geom_polygon(aes(x = long, 
                    y = lat, 
@@ -520,19 +532,14 @@ divisions_map + ditch_the_axes
 # rename "region" column from `states` dataframe to match `RECS2015` column name
 colnames(states) <- c("long", "lat", "group", "order", "DIVISION", "subregion")
 
-# rename `Tot_Energy_area_df` columns
-#see line 263 ish
-
-colnames(Tot_Energy_area_df) <- c("Urban Type", "Elec cost", "DIVISION")
-
 # subsetting divisions to find their average energy cost --> will remove because aggregate works better
-Tot_Energy_NewEngland <- Tot_Energy_area_df[Tot_Energy_area_df$DIVISION == "new_england", ]
-NewEngland_CostMean <- mean(Tot_Energy_NewEngland$`Elec cost`)
+Tot_Energy_NewEngland <- Tot_Energy_area_df[Tot_Energy_area_df$Division == "new_england", ]
+NewEngland_CostMean <- mean(Tot_Energy_NewEngland$`Yearly Electricity Costs`)
 
-Tot_Energy_MiddleAtlantic <- Tot_Energy_area_df[Tot_Energy_area_df$DIVISION == "middle_atlantic", ]
-MiddleAtlantic_CostMean <- mean(Tot_Energy_MiddleAtlantic$`Elec cost`)
+Tot_Energy_MiddleAtlantic <- Tot_Energy_area_df[Tot_Energy_area_df$Division == "middle_atlantic", ]
+MiddleAtlantic_CostMean <- mean(Tot_Energy_MiddleAtlantic$`Yearly Electricity Costs`)
 
-# Climate data-----
+#PLOT Climate v. Yearly Electricity----
 
 RECS2015$CLIMATE_REGION_PUB <- as.factor(RECS2015$CLIMATE_REGION_PUB)
 Tot_Energy_area_df$Climate
@@ -546,7 +553,7 @@ ggplot(aes(x = Climate,
   geom_boxplot() +
   labs(title = "Yearly Electricity Expenditure by Climate")
 
-# ANOVA Test Prep (Subsetting Climates)
+#ANOVA Test Prep (Subset of Climates)----
 HotDry_MixedDry <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Hot-Dry/Mixed-Dry", ]
 HotDry_MixedDry <- na.omit(HotDry_MixedDry)
 Marine <- Tot_Energy_area_df[Tot_Energy_area_df$Climate == "Marine", ]
@@ -599,22 +606,20 @@ hist_Hot_Humid <- ggplot(data=Hot_Humid, aes(`Yearly Electricity Costs`)) +
   labs(x="Yearly Electricity Costs", y="Frequency") +
   labs(title="Hot-Humid")
 
-library(gridExtra)
-
 grid.arrange(hist_HotDry_MixedDry, hist_Marine, hist_Cold_VeryCold, hist_Mixed_Humid, hist_Hot_Humid, ncol=3)
 
-# ANOVA Test (Climate)
+#ANOVA Test (Climate)----
 anovaCli = aov(`Yearly Electricity Costs` ~ Climate, data = Tot_Energy_area_df)
 xkabledply(anovaCli, title = "ANOVA result summary")
 
-# ANOVA Test (Division)
+#ANOVA Test (Division)----
 anovaDiv = aov(`Yearly Electricity Costs` ~ Division, data = Tot_Energy_area_df)
 xkabledply(anovaDiv, title = "ANOVA result summary")
 
-# Cross-tab of Divisions and Climates
+#Cross-tab of Divisions and Climates
 xkabledply(table(Tot_Energy_area_df$Division, Tot_Energy_area_df$Climate), "Cross-Tab of Division and Climate")
 
-# Stacked bar graph comparing share of climates by each US Census Division
+#PLOT Stacked bar graph climates by US Census Division -----
 Tot_Energy_area_df %>%
   mutate(Division = factor(Division, levels = c("Pacific","Mountain North","East North Central","West North Central", "Middle Atlantic", "New England", "Mountain South", "East South Central", "West South Central", "South Atlantic")))%>%
   ggplot(aes(fill=`Climate`, y="Percent", x=Division)) +
@@ -624,7 +629,7 @@ Tot_Energy_area_df %>%
   theme(axis.text.x = element_text(angle = 45, size = 11, margin = margin(r=0)),
         axis.text.y=element_blank())
 
-# Yearly Energy Expenditures based on Census Division
+#PLOT Yearly Energy Expenditures by Census Division----
 Tot_Energy_area_df %>%
   arrange(`Yearly Electricity Costs`)%>%
   mutate(Division = factor(Division, levels = c("Pacific","Mountain North","East North Central","West North Central", "Middle Atlantic", "New England", "Mountain South", "East South Central", "West South Central", "South Atlantic")))%>%
@@ -637,12 +642,29 @@ Tot_Energy_area_df %>%
 
 # Climate vs. Energy Costs, Controlling for Census Division
 
+#SAIPE (non city, non town rural median incomes)----
+saipes_conusmedinc_df <- read.csv("SAIPE_03-11-2023_usmedianincomes.csv", header=TRUE, sep=",")
 
+medinc_2015_df <- conusmedinc_df %>%
+  filter(Year == 2015)%>%
+  arrange(Median.Household.Income.)
 
+#IRA 80% threshold
+medinc_2015_df["Threshold"] <- medinc_2015_df$Median.Household.Income. * .8
 
+#2015 state median incomes----
+conusmedinc_df <- read_xls("medianincome2015.xls")
 
+conusmedinc_df <- conusmedinc_df[-c(1:3, 56:59), c(1, 10, 11)]
+colnames(conusmedinc_df) <- c("State", "Median Income", "Std.Error")
 
-# Sean's adjusted graph
+conusmedinc_df <- conusmedinc_df %>%
+  arrange(`Median Income`)
+
+#IRA 80% threshold
+conusmedinc_df["Threshold"] <- conusmedinc_df$`Median Income` * .8
+
+#PLOT Climate v. Yearly electricity costs----
 RECS2015$CLIMATE_REGION_PUB <- as.factor(RECS2015$CLIMATE_REGION_PUB)
 Tot_Energy_area_df$Climate
 
@@ -654,3 +676,4 @@ Tot_Energy_area_df %>%
              fill = Climate)) +
   geom_boxplot() +
   labs(title = "Yearly Electricity Expenditure by Climate")
+
