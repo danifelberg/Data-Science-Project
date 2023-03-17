@@ -3,18 +3,21 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap")
 library(survey)
 library(dplyr)
 library(ggmap)
 library(maps)
 library(mapdata)
+library(usmap)
 library(formattable)
 library(forcats)
 library(RColorBrewer)
 library(ezids)
 library(readxl)
 library(gridExtra)
+library(lattice)
+library(corrplot)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -405,7 +408,7 @@ chisq.test(Tot_Energy_area_df[c(1,2)])
 
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
-house_size <- data.frame(RECS2015$DOLLAREL, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN)
+house_size <- data.frame(RECS2015$DOLLAREL, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$DOLELSPH, RECS2015$DOLELCOL)
 
 house_size <- outlierKD2(house_size, 
                          house_size$RECS2015.TOTROOMS,
@@ -414,6 +417,11 @@ house_size <- outlierKD2(house_size,
 house_size <- outlierKD2(house_size, 
                          RECS2015.TOTSQFT_EN,
                          rm = TRUE)
+
+house_size_cor <- cor(house_size)
+
+corrplot.mixed(house_size_cor)
+
 summary(house_size$RECS2015.TOTROOMS)
 sd(house_size$RECS2015.TOTROOMS, na.rm = TRUE)
 summary(house_size$RECS2015.DOLLAREL)
@@ -663,6 +671,28 @@ conusmedinc_df <- conusmedinc_df %>%
 
 #IRA 80% threshold
 conusmedinc_df["Threshold"] <- conusmedinc_df$`Median Income` * .8
+
+conusmedinc_df <- conusmedinc_df[-31,]
+
+statepop <- statepop[-5]
+test <- merge(x = conusmedinc_df, 
+              y = statepop, 
+              by.x = "State",
+              by.y = "full")
+  
+test <- conusmedinc_df %>% inner_join(statepop, by = "full")
+
+#MAP IRA HP Subsidy----  
+plot_usmap(data = test, 
+           values = 'Threshold', 
+           color = "blue") + 
+  labs(title = "State Threshold for a Full IRA Heatpump Subsidy")+
+  scale_fill_continuous(
+    low = "white", 
+    high = "blue", 
+    name = "80% Median Income Threshold", 
+    label = scales::comma) + theme(legend.position = "right",
+                                   plot.title = element_text(hjust = 0.5))
 
 #PLOT Climate v. Yearly electricity costs----
 RECS2015$CLIMATE_REGION_PUB <- as.factor(RECS2015$CLIMATE_REGION_PUB)
