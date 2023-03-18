@@ -3,7 +3,7 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -18,6 +18,9 @@ library(readxl)
 library(gridExtra)
 library(lattice)
 library(corrplot)
+library(reshape2)
+#install.packages('xtable')
+library(xtable)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -42,7 +45,6 @@ des
 svytotal(~NG_MAINSPACEHEAT, des)
 
 #PLOT General Appliances comparisons----
-
 
 app_cost <- data.frame(RECS2015$DOLLAREL,RECS2015$DOLELSPH,RECS2015$DOLELCOL,
                        RECS2015$DOLELWTH,RECS2015$DOLELRFG,RECS2015$DOLELFRZ,
@@ -693,6 +695,26 @@ plot_usmap(data = test,
     name = "80% Median Income Threshold", 
     label = scales::comma) + theme(legend.position = "right",
                                    plot.title = element_text(hjust = 0.5))
+
+test <- test %>%
+  arrange(test$`Median Income`)
+
+test$`Median Income` <- currency(test$`Median Income`, 
+                 symbol = "$",
+                 digits = 0L,
+                 format = "f",
+                 big.mark = ",",
+                 sep = "")
+
+test$Threshold <- currency(test$Threshold,
+                 symbol = "$",
+                 digits = 0L,
+                 format = "f",
+                 big.mark = ",",
+                 sep = "")
+
+#print to LaTex
+print(xtable(test, type = "latex"), file = "filename2.tex")
 
 #PLOT Climate v. Yearly electricity costs----
 RECS2015$CLIMATE_REGION_PUB <- as.factor(RECS2015$CLIMATE_REGION_PUB)

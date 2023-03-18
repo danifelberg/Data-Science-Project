@@ -1,0 +1,281 @@
+---
+title: "Project 1 - Household Energy Expenditures - Electricity"
+author: "Sean Franco, Mei Fei Hung, Daniel Felberg"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r init, include=F}
+# The package "ezids" (EZ Intro to Data Science) includes some helper functions we developed for the course. 
+# Some of the frequently used functions are loadPkg(), xkabledply(), xkablesummary(), uzscale(), etc.
+# You will need to install it (once) from GitHub.
+# library(devtools)
+# devtools::install_github("physicsland/ezids")
+# Then load the package in your R session.
+#setwd() Meng Fei's WD  
+setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+#setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
+library(readr)
+library(ggplot2)
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap")
+library(survey)
+library(dplyr)
+library(ggmap)
+library(maps)
+library(mapdata)
+library(usmap)
+library(formattable)
+library(forcats)
+library(RColorBrewer)
+library(ezids)
+library(readxl)
+library(gridExtra)
+library(lattice)
+library(corrplot)
+library(reshape2)
+```
+
+
+```{r setup, include=FALSE}
+# Some of common RMD options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+knitr::opts_chunk$set(warning = F, message = F)
+# Can globally set option for number display format.
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+```
+
+```{r}
+#LoadData and Example Code for Assigning weights----- 
+#this is example code from the EIA weights doc:
+
+RECS2015 <- read.csv("recs2015_public_v4.csv", header=TRUE, sep=",")
+
+RECS2015$NG_MAINSPACEHEAT <- ifelse(RECS2015$FUELHEAT == 1, 1, 0)
+
+RECS2015$NG_MAINSPACEHEAT <- as.factor(RECS2015$NG_MAINSPACEHEAT)
+
+sampweights <- RECS2015$NWEIGHT
+
+brrwts <- RECS2015[grepl("^BRRWT", names(RECS2015))]
+
+des <- svrepdesign(weights = sampweights, 
+                   repweights = brrwts, 
+                   type = "Fay", 
+                   rho = 0.5, 
+                   mse = TRUE, 
+                   data = RECS2015)
+des
+svytotal(~NG_MAINSPACEHEAT, des)
+```
+```{r}
+
+#PLOT General Appliances comparisons----
+
+app_cost <- data.frame(RECS2015$DOLLAREL,RECS2015$DOLELSPH,RECS2015$DOLELCOL,
+                       RECS2015$DOLELWTH,RECS2015$DOLELRFG,RECS2015$DOLELFRZ,
+                       RECS2015$DOLELCOK,RECS2015$DOLELMICRO,RECS2015$DOLELCW,
+                       RECS2015$DOLELCDR,RECS2015$DOLELDWH,RECS2015$DOLELLGT,
+                       RECS2015$DOLELTVREL,RECS2015$DOLELAHUHEAT,RECS2015$DOLELAHUCOL,
+                       RECS2015$DOLELEVAPCOL,RECS2015$DOLELCFAN,RECS2015$DOLELDHUM,
+                       RECS2015$DOLELHUM,RECS2015$DOLELPLPMP,RECS2015$DOLELHTBPMP,
+                       RECS2015$DOLELHTBHEAT,RECS2015$DOLELNEC)
+
+series <- data.frame(rep(1, nrow(app_cost)))
+Spaceheating<- RECS2015$DOLELSPH
+AC<- RECS2015$DOLELCOL
+Waterheating<-RECS2015$DOLELWTH
+Refrigerator<-RECS2015$DOLELRFG
+Freezer<-RECS2015$DOLELFRZ
+Cooking<-RECS2015$DOLELCOK
+Microwave<-RECS2015$DOLELMICRO
+Clothewasher<-RECS2015$DOLELCW
+Clothedryer<-RECS2015$DOLELCDR
+Dishwasher<-RECS2015$DOLELDWH
+Light<-RECS2015$DOLELLGT
+TV<-RECS2015$DOLELTVREL
+Airhandlerheating<-RECS2015$DOLELAHUHEAT
+Airhandlercooling<-RECS2015$DOLELAHUCOL
+Fan<-RECS2015$DOLELCFAN
+
+
+app_cost <- data.frame(
+  Spaceheating, 
+  AC, 
+  Waterheating,
+  Light, 
+  TV,
+  Dishwasher,
+  Refrigerator, 
+  Freezer, 
+  Cooking, 
+  Microwave, 
+  Clothewasher, 
+  Clothedryer,
+  Fan)
+
+colnames(app_cost) <- c(
+  "Spaceheating", 
+  "AC", 
+  "Waterheating",
+  "Light", 
+  "TV",
+  "Dishwasher",
+  "Refrigerator", 
+  "Freezer", 
+  "Cooking", 
+  "Microwave", 
+  "Clothewasher", 
+  "Clothedryer",
+  "Fan")
+
+app_cost <- outlierKD2(app_cost, (Spaceheating), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (AC), rm =TRUE) 
+app_cost <- outlierKD2(app_cost, (Waterheating), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Light), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (TV), rm =TRUE)  
+app_cost <- outlierKD2(app_cost, (Dishwasher), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Refrigerator), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Freezer), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Cooking), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Microwave), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Clothewasher), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Clothedryer), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Fan), rm =TRUE)
+
+app_cost["series"] <- rep(1, nrow(app_cost))
+
+test <- melt(app_cost,  id.vars = 'series', variable.name = 'index')
+
+test %>%
+  arrange(index)%>%
+  mutate(index = factor(index, levels = c("series",
+                                          "Waterheating",
+                                          "AC",
+                                          "Spaceheating", 
+                                          "Light", 
+                                          "TV",
+                                          "Clothedryer",
+                                          "Refrigerator", 
+                                          "Fan",
+                                          "Freezer", 
+                                          "Cooking", 
+                                          "Microwave", 
+                                          "Dishwasher",
+                                          "Clothewasher"))) %>%
+  ggplot(
+    aes(x = series,
+        y = value,
+        fill = index))+ 
+  geom_bar(stat = "identity", 
+           position = "dodge") +
+  labs(title = "Annual Electricity Cost of Different Appliances", 
+       x = "Appliances",
+       y = "Annual Electricity Cost")+  
+  theme(axis.text.x = element_blank())
+```
+See above is a plot of common appliances and their total yearly electricity usage. We can notice that waterheating, spaceheating and air conditioning, are among the top appliances that consume electricity. Examining central air costs for heating and cooling are among the top energy expenses for households. 
+
+```{r}
+#Electricity costs for space heating (“DOLELSPH” variable),
+
+RECS2015$DOLELSPH <- currency(RECS2015$DOLELSPH,
+                              symbol = "$",
+                              digits = 0L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+svytotal(~DOLELSPH, des)
+
+#Electricity costs for air conditioning (“DOLELCOL” variable),
+
+RECS2015$DOLELCOL <- currency(RECS2015$DOLELCOL,
+                              symbol = "$",
+                              digits = 0L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+svytotal(~DOLELCOL, des)
+
+#Heat Pump
+
+RECS2015 <- RECS2015 %>% 
+  mutate(CENACHP = as.factor(case_when(CENACHP == 1 ~ "Has a Heat Pump",
+                                       CENACHP == 0 ~ "No Heat Pump",
+                                       CENACHP == -2 ~ "NA")))
+
+svytotal(~CENACHP, des)
+
+central_air_df <- data.frame(RECS2015$DOLELSPH, 
+                             RECS2015$DOLELCOL, 
+                             RECS2015$CENACHP)
+
+colnames(central_air_df) <- c("Electricity Space Heating Costs", 
+                              "Electricity AC Costs", 
+                              "Heat Pump Status")
+RECS2015 %>%
+  filter(EQUIPM == 4)%>%
+  select(EQUIPM)
+  
+#PLOT heatpump v. space heating costs----
+ggplot(central_air_df, 
+       aes(x = `Heat Pump Status`,
+           y = `Electricity Space Heating Costs`,
+           fill = `Heat Pump Status`))+
+  geom_bar(stat = "identity", position = "dodge")+
+  labs(title = "Yearly Space Heating Costs (in $) ")
+```
+This plot shows that for heating costs, households with heat pumps roughly save half of their heating costs that households without heat pumps.
+
+```{r}
+#PLOT heatpump v. ac costs----
+ggplot(central_air_df, 
+       aes(x = `Heat Pump Status`,
+           y = `Electricity AC Costs`,
+           fill = `Heat Pump Status`))+
+  geom_bar(stat = "identity", position = "dodge")+
+  labs(title = "Yearly AC Costs (in $)")
+```
+This plot shows that for cooling costs, households with heat pumps also save almost $500 a year  in total cooling costs compared to households without heat pumps.
+
+```{r}
+#T-Test for heatpumps v. spaceheater----
+
+ttest_central_air_df <- central_air_df %>%
+  mutate(`alt` = central_air_df$`Heat Pump Status` == "Has a Heat Pump",
+         'null' = central_air_df$`Heat Pump Status` == "No Heat Pump")
+
+no_hp <- ttest_central_air_df %>%
+  filter(null == TRUE)
+    
+has_hp <- ttest_central_air_df %>%
+  filter(alt == TRUE)
+
+t.test(x = has_hp$`Electricity Space Heating Costs`,
+       conf.level = 0.95,
+       mu = mean(no_hp$`Electricity Space Heating Costs`))
+
+#T-Test for heatpumps v. AC-----
+
+no_hp <- ttest_central_air_df %>%
+  filter(null == TRUE)
+
+has_hp <- ttest_central_air_df %>%
+  filter(alt == TRUE)
+
+t.test(x = has_hp$`Electricity AC Costs`,
+       conf.level = 0.95,
+       mu = mean(no_hp$`Electricity AC Costs`))
+
+```
+
+
