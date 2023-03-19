@@ -60,22 +60,6 @@ options(scientific=T, digits = 3)
 
 RECS2015 <- read.csv("recs2015_public_v4.csv", header=TRUE, sep=",")
 
-RECS2015$NG_MAINSPACEHEAT <- ifelse(RECS2015$FUELHEAT == 1, 1, 0)
-
-RECS2015$NG_MAINSPACEHEAT <- as.factor(RECS2015$NG_MAINSPACEHEAT)
-
-sampweights <- RECS2015$NWEIGHT
-
-brrwts <- RECS2015[grepl("^BRRWT", names(RECS2015))]
-
-des <- svrepdesign(weights = sampweights, 
-                   repweights = brrwts, 
-                   type = "Fay", 
-                   rho = 0.5, 
-                   mse = TRUE, 
-                   data = RECS2015)
-des
-svytotal(~NG_MAINSPACEHEAT, des)
 ```
 ```{r}
 
@@ -234,7 +218,7 @@ ggplot(central_air_df,
   geom_bar(stat = "identity", position = "dodge")+
   labs(title = "Yearly Space Heating Costs (in $) ")
 ```
-This plot shows that for heating costs, households with heat pumps roughly save half of their heating costs that households without heat pumps.
+This plot shows that for heating costs, households with heat pumps roughly save half of their heating costs that households without heat pumps. A T-test (see below) indicated that the difference between households with heatpumps is significant for total, yearly heating costs.
 
 ```{r}
 #PLOT heatpump v. ac costs----
@@ -245,7 +229,7 @@ ggplot(central_air_df,
   geom_bar(stat = "identity", position = "dodge")+
   labs(title = "Yearly AC Costs (in $)")
 ```
-This plot shows that for cooling costs, households with heat pumps also save almost $500 a year  in total cooling costs compared to households without heat pumps.
+This plot shows that for cooling costs, households with heat pumps also save almost $500 a year  in total cooling costs compared to households without heat pumps. A T-test (see below) indicated that the difference between households with heatpumps is significant for total, yearly AC costs.
 
 ```{r}
 #T-Test for heatpumps v. spaceheater----
@@ -278,4 +262,112 @@ t.test(x = has_hp$`Electricity AC Costs`,
 
 ```
 
+```{r}
+#----------------------Income and Energy Expenditure info----------------------- ------
+#Annual gross household income for the last year (“MONEYPY” variable),
 
+RECS2015 <- RECS2015 %>%
+  mutate(MONEYPY = as.factor(case_when(MONEYPY == 1 ~ "Less than $20,000",
+                                       MONEYPY == 2 ~ "$20,000 - $39,999",
+                                       MONEYPY == 3 ~ "$40,000 - $59,999",
+                                       MONEYPY == 4 ~ "$60,000 to $79,999",
+                                       MONEYPY == 5 ~ "$80,000 to $99,999",
+                                       MONEYPY == 6 ~ "$100,000 to $119,999",
+                                       MONEYPY == 7 ~ "$120,000 to $139,999",
+                                       MONEYPY == 8 ~ "$140,000 or more")))
+
+central_air_df["Income"] <- data.frame(RECS2015$MONEYPY)
+
+has_hp <- central_air_df %>%
+  filter(`Heat Pump Status` == "Has a Heat Pump")
+
+no_hp <- central_air_df %>%
+  filter(`Heat Pump Status` == "No Heat Pump")
+
+central_air_df %>%
+  arrange(`Heat Pump Status`) %>%
+  mutate(Income = factor(Income, levels = c("Less than $20,000",
+                                            "$20,000 - $39,999",
+                                            "$40,000 - $59,999",
+                                            "$60,000 to $79,999",
+                                            "$80,000 to $99,999",
+                                            "$100,000 to $119,999",
+                                            "$120,000 to $139,999",
+                                            "$140,000 or more")))%>%
+  ggplot(aes(x = Income,
+             y = `Heat Pump Status`,
+             fill = `Heat Pump Status`))+
+  geom_bar(stat = "identity")+
+  labs(title = "Income Bracket And Heat Pump Status",
+       ylab = "")+
+  theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)),
+        axis.text.y=element_blank()) #needs to fix income brackets to be ascending
+
+```
+
+See above is a bar plot of Heat pump status as binary counts based on household income brakets. Based on ocular scrutiny, higher income brackets report larger ratios of having heatpumps. The $20k - $39k income bracket have the highest counts of not having heatpumps, and having heat pumps. The $40k - $59k; $140k to more income brackets have high ratios of having heat pumps.
+
+#put anova test here
+
+```{r}
+
+#BOXPLOT of income and yearly energy costs----
+central_air_df["TotElectricity"] <- RECS2015$DOLLAREL
+
+central_air_df <- outlierKD2(central_air_df, TotElectricity, rm= TRUE)
+
+#PLOT income by total electricity usage-----
+central_air_df %>%
+  arrange(`Heat Pump Status`) %>%
+  mutate(Income = factor(Income, levels = c("Less than $20,000",
+                                            "$20,000 - $39,999",
+                                            "$40,000 - $59,999",
+                                            "$60,000 to $79,999",
+                                            "$80,000 to $99,999",
+                                            "$100,000 to $119,999",
+                                            "$120,000 to $139,999",
+                                            "$140,000 or more")))%>%
+  ggplot(aes(x = Income,
+             y = TotElectricity, 
+             color = Income)) + 
+  geom_boxplot(stat = "boxplot") +
+  labs(title = "Yearly Electricity Cost by Income Level ", 
+       x = "Income level",
+       y = "Yearly Electricity Cost (in $)")+  
+  theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
+        axis.text.y=element_text())
+```
+
+See above are boxplots of income brackets and total yearly electricity costs. On averge, lower incomes tend to spend less on electricity costs, compared to higher incomes. This is also supported in literature about energy poverty and cultural practices to save energy. 
+
+#put Anova test here
+
+```{r}
+Tot_Energy_area_df %>%
+  arrange(`Yearly Electricity Costs`)%>%
+  mutate(Division = factor(Division, levels = c("New England",
+                                                "Middle Atlantic",
+                                                "East North Central",
+                                                "West North Central",
+                                                "South Atlantic",
+                                                "East South Central",
+                                                "West South Central",
+                                                "Mountain North",
+                                                "Mountain South",
+                                                "Pacific")))%>%
+  ggplot(
+    aes(x = `Urban Density`,
+        y = `Yearly Electricity Costs`,
+        fill = fct_reorder(`Division`, `Yearly Electricity Costs`)))+
+  geom_boxplot(stat = "boxplot", 
+               position = "dodge")+
+  labs(title = "Urban Density and Electricity Costs",
+       fill= "Division")+
+  theme(axis.text.x = element_text(size = 9, margin = margin(r=0)), 
+        axis.text.y=element_text())+ 
+  scale_color_brewer(palette = "Pastel2")
+
+chisq.test(Tot_Energy_area_df[c(1,2)])
+```
+
+See above is a boxplot of census divisions and total yearly electricity costs. We can observe that households in rural areas spend more on electricity than Urban or Urban Clusters. We can also observe that urban areas genereally have high populations which may explain the more distant outliers. 
