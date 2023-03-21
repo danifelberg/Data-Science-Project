@@ -348,6 +348,12 @@ central_air_df %>%
 See above are boxplots of income brackets and total yearly electricity costs. On averge, lower incomes tend to spend less on electricity costs, compared to higher incomes. This is also supported in literature about energy poverty and cultural practices to save energy. 
 
 #put Anova test here
+```{r}
+income_aov<-aov(TotElectricity~Income, data=central_air_df)
+summary(income_aov)
+```
+The p-value is less than 0.05, thus rejecting the null hypothesis. There are different average electricity consumption levels between different income levels.
+
 
 ```{r}
 Tot_Energy_area_df %>%
