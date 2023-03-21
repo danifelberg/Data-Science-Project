@@ -54,6 +54,13 @@ options(scientific=T, digits = 3)
 # options(scipen=9, digits = 3) 
 ```
 
+Introduction:
+This study examines the impact of household energy expenditure reported during the year 2015 from data from the Energy Information Administration. The study attempts to conduct exploratory data analysis (EDA) related to yearly household energy consumption, the expenditures of energy related to climate region, census income levels, and appliance types. The dataset for this project is from the 2015 survey from the Energy Information Administration which is the 14th edition of this national household survey. The year 2015 was chosen because it was before the coronavirus, and that it was after the 2008 financial crisis. Additionally, this survey is randomly sampled, and the most complete version of the survey with all amendments. 
+
+Methods:
+	For the most part, the attributes were pulled from the existing EIA survey data, and examined for normality. If heteroskedasticity was present, then leverage point outliers were removed to manipulate the data to normalize it. This could be a large assumption, but our rationale was that many of these outliers were not representative of the majority of the data points for the country. For example, a large outlier for total yearly electricity expenditure is likely to be from a very wealthy individual, let’s say the household for Jeff Bezos and family who can afford high prices for electricity, rather than any given working class family household. Almost all our variables needed 
+
+
 ```{r}
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
