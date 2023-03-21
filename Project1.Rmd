@@ -185,7 +185,6 @@ RECS2015$DOLELSPH <- currency(RECS2015$DOLELSPH,
                               format = "f",
                               big.mark = ",",
                               sep = "")
-svytotal(~DOLELSPH, des)
 
 #Electricity costs for air conditioning (“DOLELCOL” variable),
 
@@ -195,7 +194,6 @@ RECS2015$DOLELCOL <- currency(RECS2015$DOLELCOL,
                               format = "f",
                               big.mark = ",",
                               sep = "")
-svytotal(~DOLELCOL, des)
 
 #Heat Pump
 
@@ -203,8 +201,6 @@ RECS2015 <- RECS2015 %>%
   mutate(CENACHP = as.factor(case_when(CENACHP == 1 ~ "Has a Heat Pump",
                                        CENACHP == 0 ~ "No Heat Pump",
                                        CENACHP == -2 ~ "NA")))
-
-svytotal(~CENACHP, des)
 
 central_air_df <- data.frame(RECS2015$DOLELSPH, 
                              RECS2015$DOLELCOL, 
@@ -348,14 +344,80 @@ central_air_df %>%
 See above are boxplots of income brackets and total yearly electricity costs. On averge, lower incomes tend to spend less on electricity costs, compared to higher incomes. This is also supported in literature about energy poverty and cultural practices to save energy. 
 
 #put Anova test here
+
 ```{r}
-income_aov<-aov(TotElectricity~Income, data=central_air_df)
-summary(income_aov)
+#Spatial Prep------
+
+#Preparing Census Regions 
+
+RECS2015 <- RECS2015 %>%
+  mutate(REGIONC = as.factor(case_when(REGIONC == 1 ~ "Northeast",
+                                       REGIONC == 2 ~ "Midwest",
+                                       REGIONC == 3 ~ "South",
+                                       REGIONC == 4 ~ "West")))
+RECS2015$REGIONC
+plot(RECS2015$REGIONC)
+
+#Preparing Census Divisions
+
+RECS2015 <- RECS2015 %>%
+  mutate(DIVISION = as.factor(case_when(DIVISION == 1 ~ "New England",
+                                       DIVISION == 2 ~ "Middle Atlantic",
+                                       DIVISION == 3 ~ "East North Central",
+                                       DIVISION == 4 ~ "West North Central",
+                                       DIVISION == 5 ~ "South Atlantic",
+                                       DIVISION == 6 ~ "East South Central",
+                                       DIVISION == 7 ~ "West South Central",
+                                       DIVISION == 8 ~ "Mountain North",
+                                       DIVISION == 9 ~ "Mountain South",
+                                       DIVISION == 10 ~ "Pacific",)))
+
+#Electricity cost differences between urban and rural areas (“UATYP10” variable),
+
+#rename levels of area 
+RECS2015 <- RECS2015 %>% 
+  mutate(UATYP10 = as.factor(recode(UATYP10,
+                          U = "Urban Area",
+                          R = "Rural",
+                          C = "Urban Cluster")))
+
+#dataframe of area and total energy
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate")
+
+#HISTOGRAM and Q-Q Plot before outliers are removed----
+ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(19, 8122, by = 100), 
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Electricity Cost", y="Frequency") +
+  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
+
+qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
+qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
+
+### Removing outliers:
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df, `Yearly Electricity Costs`, rm= TRUE)
+
+#HISTOGRAM and Q-Q Plot again after removing outliers----
+
+ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(19, 8122, by = 100), 
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Electricity Cost", y="Frequency") +
+  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
+
+qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
+qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
+
 ```
-The p-value is less than 0.05, thus rejecting the null hypothesis. There are different average electricity consumption levels between different income levels.
-
 
 ```{r}
+
+#PLOT Yearly expenditure differences by Division and Density-----
 Tot_Energy_area_df %>%
   arrange(`Yearly Electricity Costs`)%>%
   mutate(Division = factor(Division, levels = c("New England",
@@ -380,7 +442,6 @@ Tot_Energy_area_df %>%
         axis.text.y=element_text())+ 
   scale_color_brewer(palette = "Pastel2")
 
-chisq.test(Tot_Energy_area_df[c(1,2)])
 ```
 
 See above is a boxplot of census divisions and total yearly electricity costs. We can observe that households in rural areas spend more on electricity than Urban or Urban Clusters. We can also observe that urban areas genereally have high populations which may explain the more distant outliers. 
