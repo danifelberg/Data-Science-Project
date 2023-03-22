@@ -905,14 +905,14 @@ As per the implications in the analysis above, the next step is to test the rela
 
 # Sources Cited
 
-<https://www.eia.gov/todayinenergy/detail.php?id=47976> <https://www.eia.gov/consumption/residential/data/2015/index.php?view=microdata>
+*Despite more people staying at home, U.S. residential energy use fell 4% in 2020*. Homepage - U.S. Energy Information Administration (EIA). (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/todayinenergy/detail.php?id=47976>
 
-<https://www.eia.gov/consumption/residential/terminology.php#h>
+*Heat Pump Systems*. Energy.gov. (n.d.). Retrieved March 22, 2023, from <https://www.energy.gov/energysaver/heat-pump-systems>
 
-<https://www.energy.gov/energysaver/heat-pump-systems>
+Kang, J., & Reiner, D. M. (2022, April 29). *What is the effect of weather on household electricity consumption? Empirical evidence from Ireland*. ScienceDirect. Retrieved March 22, 2023, from <https://www.sciencedirect.com/science/article/pii/S014098832200189X>
 
-<https://www.imf.org/en/Publications/WP/Issues/2021/02/05/Electricity-Consumption-and-Temperature-Evidence-from-Satellite-Data-50031>
+*RECS Terminology*. EIA. (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/consumption/residential/terminology.php#h>
 
-<https://www.sciencedirect.com/science/article/pii/S014098832200189X>
+*U.S. Energy Information Administration - EIA - independent statistics and analysis*. EIA. (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/consumption/residential/data/2015/index.php?view=microdata>
 
-<https://www.eia.gov/consumption/residential/terminology.php#h>
+Yao, J. (2021, February 5). *Electricity consumption and temperature: Evidence from Satellite Data*. IMF. Retrieved March 22, 2023, from <https://www.imf.org/en/Publications/WP/Issues/2021/02/05/Electricity-Consumption-and-Temperature-Evidence-from-Satellite-Data-50031>
