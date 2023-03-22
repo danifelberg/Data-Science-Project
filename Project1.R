@@ -410,12 +410,7 @@ chisq.test(Tot_Energy_area_df[c(1,2)])
 
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
-house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, 
-                         log(RECS2015$DOLLAREL), RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, 
-                         log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL)
-
-colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity', 
-                          "Total Rooms", "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost")
+house_size <- data.frame(RECS2015$DOLLAREL, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$DOLELSPH, RECS2015$DOLELCOL)
 
 house_size <- outlierKD2(house_size, 
                          house_size$RECS2015.TOTROOMS,
@@ -429,28 +424,26 @@ house_size_cor <- cor(house_size)
 
 corrplot.mixed(house_size_cor)
 
-summary(house_size$`Total Rooms`)
-sd(house_size$`Total Rooms`, na.rm = TRUE)
-summary(house_size$`Total Electricity`)
-sd(house_size$`Total Electricity`)
+summary(house_size$RECS2015.TOTROOMS)
+sd(house_size$RECS2015.TOTROOMS, na.rm = TRUE)
+summary(house_size$RECS2015.DOLLAREL)
+sd(house_size$RECS2015.DOLLAREL)
 
 summary(RECS2015$CENACHP)
 summary(RECS2015$MONEYPY)
 
 
 #rough plot for total squarefootage (x), and energy costs (y)
-plot(x = log(house_size$`Total Electricity`),
-     y = log(house_size$SqFoot))
+plot(x = log(house_size$RECS2015.TOTSQFT_EN),
+     y = log(house_size$RECS2015.DOLLAREL))
 
 
 #effect of HP on central air costs
 
-hist(house_size$`Log Total Electricity`)
-hist(house_size$`Log SqFoot`)
-hist((house_size$`Total Rooms`))
+hist(log(RECS2015$TOTSQFT_EN))
+hist(log(RECS2015$DOLLAREL))
 
-heatpump_lm <- lm(`Total Electricity` ~ house_size$`Log SqFoot`+ house_size$`Heat Pump`, 
-                  data = house_size)
+heatpump_lm <- lm(CENACHP ~ TOTSQFT_EN + DOLLAREL + KWHCOL + BTUELCOL, data = RECS2015)
 
 summary(heatpump_lm)
 plot(heatpump_lm)
