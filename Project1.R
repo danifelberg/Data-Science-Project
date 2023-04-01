@@ -19,8 +19,8 @@ library(gridExtra)
 library(lattice)
 library(corrplot)
 library(reshape2)
-#install.packages('xtable')
 library(xtable)
+library(car)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -410,22 +410,20 @@ chisq.test(Tot_Energy_area_df[c(1,2)])
 
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
-house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, 
-                         log(RECS2015$DOLLAREL), RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, 
-                         log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL)
+house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL),RECS2015$TOTROOMS, 
+                         RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL)
 
-colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity', 
-                          "Total Rooms", "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost")
+colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity',"Total Rooms", 
+                          "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost")
 
-house_size <- outlierKD2(house_size, 
-                         house_size$RECS2015.TOTROOMS,
-                         rm = TRUE)
+house_size <- house_size %>%
+  mutate(`Heat Pump` = case_when(`Heat Pump` == "No Heat Pump" ~ '0',
+                                 `Heat Pump` == "Has a Heat Pump" ~ '1',
+                                 `Heat Pump` == "NA" ~ 'NA'))
 
-house_size <- outlierKD2(house_size, 
-                         RECS2015.TOTSQFT_EN,
-                         rm = TRUE)
+house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
 
-house_size_cor <- cor(house_size)
+house_size_cor <- cor(house_size[2:length(house_size)])
 
 corrplot.mixed(house_size_cor)
 
@@ -442,34 +440,29 @@ summary(RECS2015$MONEYPY)
 plot(x = log(house_size$`Total Electricity`),
      y = log(house_size$SqFoot))
 
-
 #effect of HP on central air costs
 
 hist(house_size$`Log Total Electricity`)
 hist(house_size$`Log SqFoot`)
 hist((house_size$`Total Rooms`))
 
-house_size <- house_size %>%
-  filter(house_size, )
-
-house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
-
-heatpump_lm <- lm(`Total Electricity` ~ house_size$`Log SqFoot`+ house_size$`Heat Pump`, 
-                  data = house_size)
-
-summary(heatpump_lm)
-
-plot(`Total Electricity` ~ `Log SqFoot`+ `Heat Pump`, data = house_size)
-
-#create scatterplot with fitted regression line
-ggplot(house_size, 
-       aes(x = house_size$`Log SqFoot`, 
-           y = house_size$`Total Electricity`)) +
-  geom_point() +
-  stat_smooth(method = "lm")
+heatpump_lm <- lm(`Total Electricity` ~ `Log SqFoot`+ `Heat Pump`+
+                    (`Total Rooms`* `Heat Pump`), data = house_size)
 
 summary(heatpump_lm)
 plot(heatpump_lm)
+
+#plot Final Regression Line------
+
+plot(`Total Electricity` ~ `Log SqFoot`+ `Heat Pump` + (`Total Rooms`* `Heat Pump`), data = house_size)
+
+ggplot(data = house_size, 
+                     aes(y = `Total Electricity`, 
+                         x = house_size$`Log SqFoot`)) + 
+  geom_point(col = 'blue') +
+  geom_abline(slope = heatpump_lm$coefficients[2], 
+                         intercept = heatpump_lm$coefficients[1], 
+                         col = 'red') 
 
 #--------------------------Mapping the data-------------------------------------
 #Load USA states----
