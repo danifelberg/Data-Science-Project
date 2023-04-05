@@ -410,16 +410,18 @@ chisq.test(Tot_Energy_area_df[c(1,2)])
 
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
-house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL),RECS2015$TOTROOMS, 
-                         RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL)
+house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$TOTROOMS, 
+                         RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL,
+                         RECS2015$CLIMATE_REGION_PUB)
 
-colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity',"Total Rooms", 
-                          "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost")
+colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity/sqft',"Total Rooms", 
+                          "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost",
+                          "Climate Region")
 
 house_size <- house_size %>%
   mutate(`Heat Pump` = case_when(`Heat Pump` == "No Heat Pump" ~ '0',
                                  `Heat Pump` == "Has a Heat Pump" ~ '1',
-                                 `Heat Pump` == "NA" ~ 'NA'))
+                                 `Heat Pump` == "NA" ~ "NA"))
 
 house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
 
@@ -432,12 +434,8 @@ sd(house_size$`Total Rooms`, na.rm = TRUE)
 summary(house_size$`Total Electricity`)
 sd(house_size$`Total Electricity`)
 
-summary(RECS2015$CENACHP)
-summary(RECS2015$MONEYPY)
-
-
 #rough plot for total squarefootage (x), and energy costs (y)
-plot(x = log(house_size$`Total Electricity`),
+plot(x = log(house_size$`Log Total Electricity/sqft`),
      y = log(house_size$SqFoot))
 
 #effect of HP on central air costs
@@ -446,7 +444,7 @@ hist(house_size$`Log Total Electricity`)
 hist(house_size$`Log SqFoot`)
 hist((house_size$`Total Rooms`))
 
-heatpump_lm <- lm(`Total Electricity` ~ `Log SqFoot`+ `Heat Pump`+
+heatpump_lm <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump`+ `Climate Region` +
                     (`Total Rooms`* `Heat Pump`), data = house_size)
 
 summary(heatpump_lm)
@@ -454,11 +452,11 @@ plot(heatpump_lm)
 
 #plot Final Regression Line------
 
-plot(`Total Electricity` ~ `Log SqFoot`+ `Heat Pump` + (`Total Rooms`* `Heat Pump`), data = house_size)
+plot(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + (`Total Rooms`* `Heat Pump`), data = house_size)
 
 ggplot(data = house_size, 
-                     aes(y = `Total Electricity`, 
-                         x = house_size$`Log SqFoot`)) + 
+                     aes(y = `Log Total Electricity/sqft`, 
+                         x = house_size$`SqFoot`)) + 
   geom_point(col = 'blue') +
   geom_abline(slope = heatpump_lm$coefficients[2], 
                          intercept = heatpump_lm$coefficients[1], 
