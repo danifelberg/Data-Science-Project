@@ -233,20 +233,6 @@ t.test(x = has_hp$`Electricity AC Costs`,
        conf.level = 0.95,
        mu = mean(no_hp$`Electricity AC Costs`))
 
-#Chi Squared Test of heatpump related to income (removed NAs)-----
-nona_central_air_df <- central_air_df #make sure to load income section DF before running this
-nona_central_air_df <- subset(central_air_df, 
-                              subset = `Heat Pump Status` != 'NA', 
-                              drop = TRUE)
-
-test <- table(nona_central_air_df$`Heat Pump Status`,
-              nona_central_air_df$Income)
-
-test <- table(droplevels(nona_central_air_df)$`Heat Pump Status`,
-      nona_central_air_df$Income)
-
-chisq_hp_inc <- chisq.test(test)
-
 #----------------------Income and Energy Expenditure info----------------------- ------
 #Annual gross household income for the last year (“MONEYPY” variable),
 
@@ -344,10 +330,9 @@ RECS2015 <- RECS2015 %>%
 
 #rename levels of area 
 RECS2015 <- RECS2015 %>% 
-  mutate(UATYP10 = as.factor(recode(UATYP10,
-                          U = "Urban Area",
-                          R = "Rural",
-                          C = "Urban Cluster")))
+  mutate(UATYP10 = as.factor(case_when(UATYP10 == "U" ~ "Urban Area",
+                                       UATYP10 == "R" ~ "Rural",
+                                       UATYP10 == "C" ~ "Urban Cluster")))
 
 #dataframe of area and total energy
 Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB)
@@ -405,8 +390,6 @@ Tot_Energy_area_df %>%
   theme(axis.text.x = element_text(size = 9, margin = margin(r=0)), 
         axis.text.y=element_text())+ 
   scale_color_brewer(palette = "Pastel2")
-
-chisq.test(Tot_Energy_area_df[c(1,2)])
 
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
