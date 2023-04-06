@@ -1,5 +1,5 @@
 #setwd() Meng Fei's WD  
-setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -408,9 +408,9 @@ house_size <- house_size %>%
 
 house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
 
-house_size_cor <- cor(house_size[2:length(house_size)])
+house_size_cor <- cor(house_size[2:length(house_size)]) #error output: "'x' must be numeric"
 
-corrplot.mixed(house_size_cor)
+corrplot.mixed(house_size_cor) #error output: "house_size_cor" not defined (see above)
 
 summary(house_size$`Total Rooms`)
 sd(house_size$`Total Rooms`, na.rm = TRUE)
@@ -650,7 +650,7 @@ Tot_Energy_area_df %>%
 # Climate vs. Energy Costs, Controlling for Census Division
 
 #SAIPE (non city, non town rural median incomes)----
-saipes_conusmedinc_df <- read.csv("SAIPE_03-11-2023_usmedianincomes.csv", header=TRUE, sep=",")
+saipes_conusmedinc_df <- read.csv("SAIPE_03-11-2023_usmedianincomes.csv", header=TRUE, sep=",") # add file to Git repository so it can be called!
 
 medinc_2015_df <- conusmedinc_df %>%
   filter(Year == 2015)%>%
@@ -660,7 +660,7 @@ medinc_2015_df <- conusmedinc_df %>%
 medinc_2015_df["Threshold"] <- medinc_2015_df$Median.Household.Income. * .8
 
 #2015 state median incomes----
-conusmedinc_df <- read_xls("medianincome2015.xls")
+conusmedinc_df <- read_xls("medianincome2015.xls") # add file to Git repo
 
 conusmedinc_df <- conusmedinc_df[-c(1:3, 56:59), c(1, 10, 11)]
 colnames(conusmedinc_df) <- c("State", "Median Income", "Std.Error")
@@ -726,3 +726,25 @@ Tot_Energy_area_df %>%
   geom_boxplot() +
   labs(title = "Yearly Electricity Expenditure by Climate")
 
+# Scatter-plot of US Census vs Yearly Electricity Costs, Controlling for Climate
+
+ggplot(Tot_Energy_area_df, aes(x=Division, y=`Yearly Electricity Costs`, color=Climate)) +
+  geom_point() +
+  labs(x="US Census Division", y="Yearly Electricity Costs") +
+  labs(title="Division vs. Electricity Cost, Colored by Climate")
+
+# Preparing Linear Models for climate and census division
+lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
+lm.Climate <- lm(`Yearly Electricity Costs`~Climate, data = Tot_Energy_area_df)
+lm.Division.Climate <- lm(`Yearly Electricity Costs`~Division+Climate, data = Tot_Energy_area_df)
+lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Division*Climate, data = Tot_Energy_area_df)
+
+# Tables of LM comparisons, and ANOVA of LMs (Elect cost, climate, census division)
+xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
+xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
+xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
+xkabledply(lm.DivCli.interaction)
+
+anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
+
+xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
