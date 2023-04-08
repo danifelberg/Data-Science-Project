@@ -153,7 +153,7 @@ test %>%
 
 RECS2015$DOLELSPH <- currency(RECS2015$DOLELSPH,
                               symbol = "$",
-                              digits = 0L,
+                              digits = 2L,
                               format = "f",
                               big.mark = ",",
                               sep = "")
@@ -163,13 +163,13 @@ svytotal(~DOLELSPH, des)
 
 RECS2015$DOLELCOL <- currency(RECS2015$DOLELCOL,
                               symbol = "$",
-                              digits = 0L,
+                              digits = 2L,
                               format = "f",
                               big.mark = ",",
                               sep = "")
 svytotal(~DOLELCOL, des)
 
-#Heat Pump
+#Heat Pump dataframe 
 
 RECS2015 <- RECS2015 %>% 
   mutate(CENACHP = as.factor(case_when(CENACHP == 1 ~ "Has a Heat Pump",
@@ -185,25 +185,26 @@ central_air_df <- data.frame(RECS2015$DOLELSPH,
 colnames(central_air_df) <- c("Electricity Space Heating Costs", 
                               "Electricity AC Costs", 
                               "Heat Pump Status")
-RECS2015 %>%
-  filter(EQUIPM == 4)%>%
-  select(EQUIPM)
-  
-#PLOT heatpump v. space heating costs----
-ggplot(central_air_df, 
-       aes(x = `Heat Pump Status`,
-           y = `Electricity Space Heating Costs`,
-           fill = `Heat Pump Status`))+
-  geom_bar(stat = "identity", position = "dodge")+
-  labs(title = "Yearly Space Heating Costs (in $) ")
 
-#PLOT heatpump v. ac costs----
-ggplot(central_air_df, 
+#dataframe prep for combo plot
+i <- 1
+for(i in 2:2){
+  newdf["Electricity Costs in $"] <- rbind(as_tibble(central_air_df[,1]), as_tibble(central_air_df[,i]))
+}
+newdf["Heat Pump Status"] <- rep(central_air_df$`Heat Pump Status`, 2) 
+newdf["Group"] <- rbind(as_tibble(rep("Heating", nrow(central_air_df))), 
+                        as_tibble(rep("Cooling", nrow(central_air_df)))) 
+
+group.colors <- c("Heating" = "Orange", "Cooling" = "Light Blue")
+
+#Plot Heatpump by Heating and Cooling new, combo graph----
+ggplot(newdf,
        aes(x = `Heat Pump Status`,
-           y = `Electricity AC Costs`,
-           fill = `Heat Pump Status`))+
-  geom_bar(stat = "identity", position = "dodge")+
-  labs(title = "Yearly AC Costs (in $)")
+           y = `Electricity Costs in $`,
+           fill = `Group`))+
+  geom_col(stat = "identity", position = "dodge")+
+  labs(title = "Yearly Central Air Costs (in $)")+
+  scale_fill_manual(values=group.colors)
 
 #T-Test for heatpumps v. spaceheater----
 
@@ -408,9 +409,9 @@ house_size <- house_size %>%
 
 house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
 
-house_size_cor <- cor(house_size[2:length(house_size)]) #error output: "'x' must be numeric"
+house_size_cor <- cor(house_size[2:length(house_size)])
 
-corrplot.mixed(house_size_cor) #error output: "house_size_cor" not defined (see above)
+corrplot.mixed(house_size_cor)
 
 summary(house_size$`Total Rooms`)
 sd(house_size$`Total Rooms`, na.rm = TRUE)
@@ -431,19 +432,23 @@ heatpump_lm <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump`+ `Climate
                     (`Total Rooms`* `Heat Pump`), data = house_size)
 
 summary(heatpump_lm)
+test <- xkabledply(heatpump_lm, title = "Regression")
+
+print(xtable(heatpump_lm, type = "latex"), file = "filename2.tex")
+
 plot(heatpump_lm)
 
 #plot Final Regression Line------
 
-plot(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + (`Total Rooms`* `Heat Pump`), data = house_size)
+plot(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Climate Region` + (`Total Rooms`* `Heat Pump`), data = house_size)
 
 ggplot(data = house_size, 
-                     aes(y = `Log Total Electricity/sqft`, 
-                         x = house_size$`SqFoot`)) + 
+       aes(y = `Log Total Electricity/sqft`, 
+           x = house_size$`SqFoot`)) + 
   geom_point(col = 'blue') +
   geom_abline(slope = heatpump_lm$coefficients[2], 
-                         intercept = heatpump_lm$coefficients[1], 
-                         col = 'red') 
+              intercept = heatpump_lm$coefficients[1], 
+              col = 'red') 
 
 #--------------------------Mapping the data-------------------------------------
 #Load USA states----
@@ -647,20 +652,8 @@ Tot_Energy_area_df %>%
   labs(title = "Yearly Electricity Expenditure by Division") +
   theme(axis.text.x = element_blank())
 
-# Climate vs. Energy Costs, Controlling for Census Division
-
-#SAIPE (non city, non town rural median incomes)----
-saipes_conusmedinc_df <- read.csv("SAIPE_03-11-2023_usmedianincomes.csv", header=TRUE, sep=",") # add file to Git repository so it can be called!
-
-medinc_2015_df <- conusmedinc_df %>%
-  filter(Year == 2015)%>%
-  arrange(Median.Household.Income.)
-
-#IRA 80% threshold
-medinc_2015_df["Threshold"] <- medinc_2015_df$Median.Household.Income. * .8
-
-#2015 state median incomes----
-conusmedinc_df <- read_xls("medianincome2015.xls") # add file to Git repo
+#Load 2015 state median incomes----
+conusmedinc_df <- read_xls("medianincome2015.xls")
 
 conusmedinc_df <- conusmedinc_df[-c(1:3, 56:59), c(1, 10, 11)]
 colnames(conusmedinc_df) <- c("State", "Median Income", "Std.Error")
@@ -678,7 +671,7 @@ test <- merge(x = conusmedinc_df,
               y = statepop, 
               by.x = "State",
               by.y = "full")
-  
+
 test <- conusmedinc_df %>% inner_join(statepop, by = "full")
 
 #MAP IRA HP Subsidy----  
@@ -697,18 +690,18 @@ test <- test %>%
   arrange(test$`Median Income`)
 
 test$`Median Income` <- currency(test$`Median Income`, 
-                 symbol = "$",
-                 digits = 0L,
-                 format = "f",
-                 big.mark = ",",
-                 sep = "")
+                                 symbol = "$",
+                                 digits = 0L,
+                                 format = "f",
+                                 big.mark = ",",
+                                 sep = "")
 
 test$Threshold <- currency(test$Threshold,
-                 symbol = "$",
-                 digits = 0L,
-                 format = "f",
-                 big.mark = ",",
-                 sep = "")
+                           symbol = "$",
+                           digits = 0L,
+                           format = "f",
+                           big.mark = ",",
+                           sep = "")
 
 #print to LaTex
 print(xtable(test, type = "latex"), file = "filename2.tex")
@@ -726,7 +719,7 @@ Tot_Energy_area_df %>%
   geom_boxplot() +
   labs(title = "Yearly Electricity Expenditure by Climate")
 
-# Scatter-plot of US Census vs Yearly Electricity Costs, Controlling for Climate
+#PLOT Scatter-plot of US Census v. Yearly Electricity Costs, Controlling for Climate----
 
 ggplot(Tot_Energy_area_df, aes(x=Division, y=`Yearly Electricity Costs`, color=Climate)) +
   geom_point() +
@@ -746,5 +739,5 @@ xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula
 xkabledply(lm.DivCli.interaction)
 
 anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
-
+#ANOVA test (which Regression is best) ----
 xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
