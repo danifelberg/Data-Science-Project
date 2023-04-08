@@ -1,5 +1,5 @@
 #setwd() Meng Fei's WD  
-#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -163,12 +163,19 @@ colnames(central_air_df) <- c("Electricity Space Heating Costs",
 
 #dataframe prep for combo plot
 i <- 1
+newdf <- 0
 for(i in 2:2){
+  
   newdf["Electricity Costs in $"] <- rbind(as_tibble(central_air_df[,1]), as_tibble(central_air_df[,i]))
+  
 }
+newdf <- as.data.frame(newdf)
 newdf["Heat Pump Status"] <- rep(central_air_df$`Heat Pump Status`, 2) 
 newdf["Group"] <- rbind(as_tibble(rep("Heating", nrow(central_air_df))), 
                         as_tibble(rep("Cooling", nrow(central_air_df)))) 
+
+newdf <- newdf[-1]
+colnames(newdf) <- c("Electricity Costs in $", "Heat Pump Status", "Group")
 
 group.colors <- c("Heating" = "Orange", "Cooling" = "Light Blue")
 
