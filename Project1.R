@@ -46,62 +46,34 @@ svytotal(~NG_MAINSPACEHEAT, des)
 
 #PLOT General Appliances comparisons----
 
-app_cost <- data.frame(RECS2015$DOLLAREL,RECS2015$DOLELSPH,RECS2015$DOLELCOL,
-                       RECS2015$DOLELWTH,RECS2015$DOLELRFG,RECS2015$DOLELFRZ,
-                       RECS2015$DOLELCOK,RECS2015$DOLELMICRO,RECS2015$DOLELCW,
-                       RECS2015$DOLELCDR,RECS2015$DOLELDWH,RECS2015$DOLELLGT,
-                       RECS2015$DOLELTVREL,RECS2015$DOLELAHUHEAT,RECS2015$DOLELAHUCOL,
-                       RECS2015$DOLELEVAPCOL,RECS2015$DOLELCFAN,RECS2015$DOLELDHUM,
-                       RECS2015$DOLELHUM,RECS2015$DOLELPLPMP,RECS2015$DOLELHTBPMP,
-                       RECS2015$DOLELHTBHEAT,RECS2015$DOLELNEC)
-
-series <- data.frame(rep(1, nrow(app_cost)))
-Spaceheating<- RECS2015$DOLELSPH
-AC<- RECS2015$DOLELCOL
-Waterheating<-RECS2015$DOLELWTH
-Refrigerator<-RECS2015$DOLELRFG
-Freezer<-RECS2015$DOLELFRZ
-Cooking<-RECS2015$DOLELCOK
-Microwave<-RECS2015$DOLELMICRO
-Clothewasher<-RECS2015$DOLELCW
-Clothedryer<-RECS2015$DOLELCDR
-Dishwasher<-RECS2015$DOLELDWH
-Light<-RECS2015$DOLELLGT
-TV<-RECS2015$DOLELTVREL
-Airhandlerheating<-RECS2015$DOLELAHUHEAT
-Airhandlercooling<-RECS2015$DOLELAHUCOL
-Fan<-RECS2015$DOLELCFAN
-
-
-app_cost <- data.frame(
-  Spaceheating, 
-  AC, 
-  Waterheating,
-  Light, 
-  TV,
-  Dishwasher,
-  Refrigerator, 
-  Freezer, 
-  Cooking, 
-  Microwave, 
-  Clothewasher, 
-  Clothedryer,
-  Fan)
+app_cost <- data.frame(RECS2015$DOLELSPH,
+                       RECS2015$DOLELCOL,
+                       RECS2015$DOLELWTH,
+                       RECS2015$DOLELRFG,
+                       RECS2015$DOLELFRZ,
+                       RECS2015$DOLELCOK,
+                       RECS2015$DOLELMICRO,
+                       RECS2015$DOLELCW,
+                       RECS2015$DOLELCDR,
+                       RECS2015$DOLELDWH,
+                       RECS2015$DOLELLGT,
+                       RECS2015$DOLELTVREL,
+                       RECS2015$DOLELCFAN)
 
 colnames(app_cost) <- c(
   "Spaceheating", 
   "AC", 
   "Waterheating",
-  "Light", 
-  "TV",
-  "Dishwasher",
   "Refrigerator", 
-  "Freezer", 
+  "Freezer",
   "Cooking", 
-  "Microwave", 
+  "Microwave",
   "Clothewasher", 
   "Clothedryer",
-  "Fan")
+  "Dishwasher",
+  "Light", 
+  "TV",
+  "Fans")
 
 app_cost <- outlierKD2(app_cost, (Spaceheating), rm =TRUE)
 app_cost <- outlierKD2(app_cost, (AC), rm =TRUE) 
@@ -115,7 +87,9 @@ app_cost <- outlierKD2(app_cost, (Cooking), rm =TRUE)
 app_cost <- outlierKD2(app_cost, (Microwave), rm =TRUE)
 app_cost <- outlierKD2(app_cost, (Clothewasher), rm =TRUE)
 app_cost <- outlierKD2(app_cost, (Clothedryer), rm =TRUE)
-app_cost <- outlierKD2(app_cost, (Fan), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Fans), rm =TRUE)
+
+app_cost <- app_cost[-ncol(app_cost)]
 
 app_cost["series"] <- rep(1, nrow(app_cost))
 
@@ -124,19 +98,20 @@ test <- melt(app_cost,  id.vars = 'series', variable.name = 'index')
 test %>%
   arrange(index)%>%
   mutate(index = factor(index, levels = c("series",
-                                          "Spaceheating", 
-                                          "AC", 
                                           "Waterheating",
-                                          "Light", 
+                                          "AC",
+                                          "Spaceheating", 
+                                          "Light",
                                           "TV",
+                                          "Refrigerator",
                                           "Clothedryer",
-                                          "Refrigerator", 
-                                          "Fan",
-                                          "Freezer", 
+                                          "Fans",
+                                          "Freezer",
                                           "Cooking", 
                                           "Microwave", 
                                           "Dishwasher",
-                                          "Clothewasher"))) %>%
+                                          "Clothewasher"
+                                          ))) %>%
   ggplot(
     aes(x = series,
         y = value,
