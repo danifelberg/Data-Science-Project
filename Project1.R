@@ -1,5 +1,5 @@
 #setwd() Meng Fei's WD  
-setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -231,6 +231,13 @@ RECS2015 <- RECS2015 %>%
 
 central_air_df["Income"] <- data.frame(RECS2015$MONEYPY)
 
+RECS2015 <- RECS2015 %>%
+  mutate(EDUCATION = as.factor(case_when(EDUCATION == 1 ~ "Less than high school diploma or GED",
+                                         EDUCATION == 2 ~ "High school diploma or GED",
+                                         EDUCATION == 3 ~ "Some college or Associate’s degree",
+                                         EDUCATION == 4 ~ "Bachelor’s degree",
+                                         EDUCATION == 5 ~ "Grad Plus degree")))
+
 has_hp <- central_air_df %>%
   filter(`Heat Pump Status` == "Has a Heat Pump")
 
@@ -378,11 +385,13 @@ Tot_Energy_area_df %>%
 
 house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$TOTROOMS, 
                          RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL,
-                         RECS2015$CLIMATE_REGION_PUB)
+                         RECS2015$CLIMATE_REGION_PUB, RECS2015$MONEYPY, RECS2015$NHSLDMEM, RECS2015$EDUCATION)
 
 colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity/sqft',"Total Rooms", 
                           "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost",
-                          "Climate Region")
+                          "Climate Region", "Income", "Number of Household Members", "Education")
+
+house_size["Time"] <- sample(c(0,1), size = nrow(house_size), replace = TRUE)
 
 house_size <- house_size %>%
   mutate(`Heat Pump` = case_when(`Heat Pump` == "No Heat Pump" ~ '0',
@@ -395,42 +404,46 @@ house_size_cor <- cor(house_size[2:length(house_size)])
 
 corrplot.mixed(house_size_cor)
 
-summary(house_size$`Total Rooms`)
-sd(house_size$`Total Rooms`, na.rm = TRUE)
-summary(house_size$`Total Electricity`)
-sd(house_size$`Total Electricity`)
+#Regressions
 
-#rough plot for total squarefootage (x), and energy costs (y)
-plot(x = log(house_size$`Log Total Electricity/sqft`),
-     y = log(house_size$SqFoot))
+heatpump_lm <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump`+ `Climate Region` + `Total Rooms`, data = house_size)
 
-#effect of HP on central air costs
+heatpump_lm2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Total Rooms` + `Climate Region` +
+                    `Income`, data = house_size)
 
-hist(house_size$`Log Total Electricity`)
-hist(house_size$`Log SqFoot`)
-hist((house_size$`Total Rooms`))
+heatpump_lm3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Total Rooms`+ `Climate Region` +
+                     `Income` + `Education`, data = house_size)
 
-heatpump_lm <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump`+ `Climate Region` +
-                    (`Total Rooms`* `Heat Pump`), data = house_size)
+heatpump_lm4 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Total Rooms`+ `Climate Region` +
+                     `Income` + `Education` + `Number of Household Members`, data = house_size)
 
-summary(heatpump_lm)
-test <- xkabledply(heatpump_lm, title = "Regression")
+xkabledply(anova(heatpump_lm, heatpump_lm2, heatpump_lm3, heatpump_lm4))
 
-print(xtable(heatpump_lm, type = "latex"), file = "filename2.tex")
+summary(heatpump_lm3)
 
 plot(heatpump_lm)
+plot(heatpump_lm3)
 
 #plot Final Regression Line------
 
-plot(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Climate Region` + (`Total Rooms`* `Heat Pump`), data = house_size)
+plot(`Total Electricity` ~ `SqFoot`+ `Heat Pump`+ `Climate Region` +
+       `Income` + `Education` + `Number of Household Members`, data = house_size)
 
 ggplot(data = house_size, 
        aes(y = `Log Total Electricity/sqft`, 
            x = house_size$`SqFoot`)) + 
   geom_point(col = 'blue') +
-  geom_abline(slope = heatpump_lm$coefficients[2], 
-              intercept = heatpump_lm$coefficients[1], 
+  geom_abline(slope = heatpump_lm4$coefficients[2], 
+              intercept = heatpump_lm4$coefficients[1], 
               col = 'red') 
+
+#DID Regression work in progress
+
+pre_df <- data.frame(house_size %>%
+                       filter(`Time` == 0))
+  
+post_df <-  data.frame(house_size %>%
+                         filter(`Time` == 1)) 
 
 #--------------------------Mapping the data-------------------------------------
 #Load USA states----
@@ -686,7 +699,7 @@ test$Threshold <- currency(test$Threshold,
                            sep = "")
 
 #print to LaTex
-print(xtable(test, type = "latex"), file = "filename2.tex")
+#print(xtable(test, type = "latex"), file = "filename2.tex")
 
 #PLOT Climate v. Yearly electricity costs----
 RECS2015$CLIMATE_REGION_PUB <- as.factor(RECS2015$CLIMATE_REGION_PUB)
