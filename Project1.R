@@ -796,6 +796,10 @@ Tot_Energy_area_df %>%
   labs(title = "Yearly Electricity Expenditure by Climate")
 
 #PLOT Barplots of US Census v. Yearly Electricity Costs, Controlling for Climate----
+#PLOT Bar Plot of US Census v. Yearly Electricity Costs, Controlling for Climate----
+level_order <- c("Mountain North", "Mountain South", "New England", "East South Central", "West North Central", "Middle Atlantic", "West South Central", "East North Central", "Pacific", "South Atlantic")
+Tot_Energy_area_df$Division <- factor(Tot_Energy_area_df$Division, levels = level_order)
+
 ggplot(Tot_Energy_area_df, aes(x=Division, 
                                y=`Yearly Electricity Costs`, 
                                color=Climate, 

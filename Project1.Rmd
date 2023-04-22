@@ -22,7 +22,7 @@ output:
 # devtools::install_github("physicsland/ezids")
 # Then load the package in your R session.
 #setwd() Meng Fei's WD  
-#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -66,13 +66,9 @@ Methods:
 
 
 ```{r}
-#LoadData and Example Code for Assigning weights----- 
-#this is example code from the EIA weights doc:
+#LoadData ----- 
 
 RECS2015 <- read.csv("recs2015_public_v4.csv", header=TRUE, sep=",")
-
-```
-```{r}
 
 app_cost <- data.frame(RECS2015$DOLELSPH,
                        RECS2015$DOLELCOL,
@@ -154,6 +150,7 @@ test %>%
 See above is a plot of common appliances and their total yearly electricity usage. We can notice that waterheating, spaceheating and air conditioning, are among the top appliances that consume electricity. Examining central air costs for heating and cooling are among the top energy expenses for households. 
 
 ```{r}
+#Electricity costs for space heating (“DOLELSPH” variable),
 
 RECS2015$DOLELSPH <- currency(RECS2015$DOLELSPH,
                               symbol = "$",
@@ -162,6 +159,8 @@ RECS2015$DOLELSPH <- currency(RECS2015$DOLELSPH,
                               big.mark = ",",
                               sep = "")
 
+#Electricity costs for air conditioning (“DOLELCOL” variable),
+
 RECS2015$DOLELCOL <- currency(RECS2015$DOLELCOL,
                               symbol = "$",
                               digits = 2L,
@@ -169,11 +168,72 @@ RECS2015$DOLELCOL <- currency(RECS2015$DOLELCOL,
                               big.mark = ",",
                               sep = "")
 
+#Natural Gas costs (“DOLLERNG” variable),
+
+RECS2015$DOLLARNG <- currency(RECS2015$DOLLARNG,
+                              symbol = "$",
+                              digits = 2L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+
+#Natural Gas costs (“DOLLARFO” variable),
+
+RECS2015$DOLLARFO <- currency(RECS2015$DOLLARFO,
+                              symbol = "$",
+                              digits = 2L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+
+#Heat Pump dataframe 
 RECS2015 <- RECS2015 %>% 
   mutate(CENACHP = as.factor(case_when(CENACHP == 1 ~ "Has a Heat Pump",
                                        CENACHP == 0 ~ "No Heat Pump",
                                        CENACHP == -2 ~ "NA")))
 
+RECS2015 <- RECS2015 %>%
+  mutate(MONEYPY = as.factor(case_when(MONEYPY == 1 ~ "Less than $20,000",
+                                       MONEYPY == 2 ~ "$20,000 - $39,999",
+                                       MONEYPY == 3 ~ "$40,000 - $59,999",
+                                       MONEYPY == 4 ~ "$60,000 to $79,999",
+                                       MONEYPY == 5 ~ "$80,000 to $99,999",
+                                       MONEYPY == 6 ~ "$100,000 to $119,999",
+                                       MONEYPY == 7 ~ "$120,000 to $139,999",
+                                       MONEYPY == 8 ~ "$140,000 or more")))
+
+RECS2015 <- RECS2015 %>%
+  mutate(EDUCATION = as.factor(case_when(EDUCATION == 1 ~ "Less than high school diploma or GED",
+                                         EDUCATION == 2 ~ "High school diploma or GED",
+                                         EDUCATION == 3 ~ "Some college or Associate’s degree",
+                                         EDUCATION == 4 ~ "Bachelor’s degree",
+                                         EDUCATION == 5 ~ "Grad Plus degree")))
+
+RECS2015 <- RECS2015 %>%
+  mutate(YEARMADERANGE = as.factor(case_when(YEARMADERANGE == 1 ~ "Before 1950",
+                                             YEARMADERANGE == 2 ~ "1950 to 1959",
+                                             YEARMADERANGE == 3 ~ "1960 to 1969",
+                                             YEARMADERANGE == 4 ~ "1970 to 1979",
+                                             YEARMADERANGE == 5 ~ "1980 to 1989",
+                                             YEARMADERANGE == 6 ~ "1990 to 1999",
+                                             YEARMADERANGE == 7 ~ "2000 to 2009",
+                                             YEARMADERANGE == 8 ~ "2010 to 2015")))
+
+RECS2015 <- RECS2015 %>%
+  mutate(EQUIPM = as.factor(case_when(EQUIPM == 2 ~ "Steam/hot water system with radiators or pipes",
+                                      EQUIPM == 3 ~ "Central furnace",
+                                      EQUIPM == 4 ~ "Heat pump",
+                                      EQUIPM == 5 ~ "Built-in electric units installed in walls, ceilings, baseboards, or floors",
+                                      EQUIPM == 6 ~ "Built-in floor/wall pipeless furnace",
+                                      EQUIPM == 7 ~ "Built-in room heater burning gas, oil, or kerosene",
+                                      EQUIPM == 8 ~ "Wood-burning stove (cordwood or pellets)",
+                                      EQUIPM == 9 ~ "Fireplace",
+                                      EQUIPM == 10 ~ "Portable electric heaters",
+                                      EQUIPM == 21 ~ "Some other equipment",
+                                      EQUIPM == -2 ~ NA)))
+```
+
+```{r}
 central_air_df <- data.frame(RECS2015$DOLELSPH, 
                              RECS2015$DOLELCOL, 
                              RECS2015$CENACHP)
@@ -248,16 +308,6 @@ t.test(x = has_hp$`Electricity AC Costs`,
 #----------------------Income and Energy Expenditure info----------------------- ------
 #Annual gross household income for the last year (“MONEYPY” variable),
 
-RECS2015 <- RECS2015 %>%
-  mutate(MONEYPY = as.factor(case_when(MONEYPY == 1 ~ "Less than $20,000",
-                                       MONEYPY == 2 ~ "$20,000 - $39,999",
-                                       MONEYPY == 3 ~ "$40,000 - $59,999",
-                                       MONEYPY == 4 ~ "$60,000 to $79,999",
-                                       MONEYPY == 5 ~ "$80,000 to $99,999",
-                                       MONEYPY == 6 ~ "$100,000 to $119,999",
-                                       MONEYPY == 7 ~ "$120,000 to $139,999",
-                                       MONEYPY == 8 ~ "$140,000 or more")))
-
 central_air_df["Income"] <- data.frame(RECS2015$MONEYPY)
 
 has_hp <- central_air_df %>%
@@ -283,7 +333,7 @@ central_air_df %>%
   labs(title = "Income Bracket And Heat Pump Status",
        ylab = "")+
   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)),
-        axis.text.y=element_blank()) #needs to fix income brackets to be ascending
+        axis.text.y=element_blank()) 
 
 ```
 
@@ -440,10 +490,8 @@ xkabledply(anovaDiv, title = "ANOVA result summary")
 
 ```
 ```{r}
-#PLOT Bar Plot of US Census v. Yearly Electricity Costs, Controlling for Climate----
-
+#PLOT Barplots of US Census v. Yearly Electricity Costs, Controlling for Climate----
 level_order <- c("Mountain North", "Mountain South", "New England", "East South Central", "West North Central", "Middle Atlantic", "West South Central", "East North Central", "Pacific", "South Atlantic")
-
 Tot_Energy_area_df$Division <- factor(Tot_Energy_area_df$Division, levels = level_order)
 
 ggplot(Tot_Energy_area_df, aes(x=Division, 
@@ -454,6 +502,7 @@ ggplot(Tot_Energy_area_df, aes(x=Division,
   labs(x="US Census Division", y="Yearly Electricity Costs", title="Division vs. Electricity Cost, Colored by Climate") +
    theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
         axis.text.y=element_text())
+
 ```
 
 This shows an ANOVA table comparing different regressions of the dependent Y variable, total electricity expenditures, respectively on Division, and Climate type. Overall, it is observed significance at the 5% level for climates that are Hot and Humid, mixed-humid, and hot-dry/mixed dry. This is also shown in our prior graph which shows these climate categories have overall higher averages for total energy costs. It is also observed that the divisions West South Cental, New England, Middle Atlantic, and East South central are significant at the 5% level. This means that these regions have higher total expenditures on heating or cooling, or both. This is also supported visually on our graphs where these divisions report higher averages for total electricity expenditures. 
@@ -476,6 +525,8 @@ anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.
 #ANOVA test (which Regression is best) ----
 xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
 ```
+
+
 
 
 ```{r}
@@ -547,4 +598,4 @@ ty <- as.matrix(fit[[2]])
 ty <- ty[-1]
 ```
 
-To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \$0.00959 In more digestible terms, having a heat pump  decreases total energy expenditures by \$10 per 1000 square footage. 
+To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump  decreases total energy expenditures by \$1.4 per 1 square footage. 
