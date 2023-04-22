@@ -1,5 +1,4 @@
-getwd()
-setwd("C:/my document/GWU/6101/project")# Meng Fei's WD  
+#setwd("C:/my document/GWU/6101/project")# Meng Fei's WD  
 #setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
@@ -22,6 +21,9 @@ library(corrplot)
 library(reshape2)
 library(xtable)
 library(car)
+library(glmnet)
+library(Metrics)
+library(boot)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -145,6 +147,24 @@ RECS2015$DOLELCOL <- currency(RECS2015$DOLELCOL,
                               sep = "")
 svytotal(~DOLELCOL, des)
 
+#Natural Gas costs (“DOLLERNG” variable),
+
+RECS2015$DOLLARNG <- currency(RECS2015$DOLLARNG,
+                              symbol = "$",
+                              digits = 2L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+
+#Natural Gas costs (“DOLLARFO” variable),
+
+RECS2015$DOLLARFO <- currency(RECS2015$DOLLARFO,
+                              symbol = "$",
+                              digits = 2L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+
 #Heat Pump dataframe 
 
 RECS2015 <- RECS2015 %>% 
@@ -239,6 +259,29 @@ RECS2015 <- RECS2015 %>%
                                          EDUCATION == 4 ~ "Bachelor’s degree",
                                          EDUCATION == 5 ~ "Grad Plus degree")))
 
+RECS2015 <- RECS2015 %>%
+  mutate(YEARMADERANGE = as.factor(case_when(YEARMADERANGE == 1 ~ "Before 1950",
+                                             YEARMADERANGE == 2 ~ "1950 to 1959",
+                                             YEARMADERANGE == 3 ~ "1960 to 1969",
+                                             YEARMADERANGE == 4 ~ "1970 to 1979",
+                                             YEARMADERANGE == 5 ~ "1980 to 1989",
+                                             YEARMADERANGE == 6 ~ "1990 to 1999",
+                                             YEARMADERANGE == 7 ~ "2000 to 2009",
+                                             YEARMADERANGE == 8 ~ "2010 to 2015")))
+
+RECS2015 <- RECS2015 %>%
+  mutate(EQUIPM = as.factor(case_when(EQUIPM == 2 ~ "Steam/hot water system with radiators or pipes",
+                                      EQUIPM == 3 ~ "Central furnace",
+                                      EQUIPM == 4 ~ "Heat pump",
+                                      EQUIPM == 5 ~ "Built-in electric units installed in walls, ceilings, baseboards, or floors",
+                                      EQUIPM == 6 ~ "Built-in floor/wall pipeless furnace",
+                                      EQUIPM == 7 ~ "Built-in room heater burning gas, oil, or kerosene",
+                                      EQUIPM == 8 ~ "Wood-burning stove (cordwood or pellets)",
+                                      EQUIPM == 9 ~ "Fireplace",
+                                      EQUIPM == 10 ~ "Portable electric heaters",
+                                      EQUIPM == 21 ~ "Some other equipment",
+                                      EQUIPM == -2 ~ NA)))
+
 has_hp <- central_air_df %>%
   filter(`Heat Pump Status` == "Has a Heat Pump")
 
@@ -294,7 +337,6 @@ central_air_df %>%
 #ANOVA Test (Income level)----
 anovaInc = aov(TotElectricity ~ Income, data = central_air_df)
 xkabledply(anovaInc, title = "ANOVA result summary")
-
 
 #Spatial Prep------
 
@@ -394,72 +436,96 @@ xkabledply(anovaUrb, title = "ANOVA result summary")
 anovaDiv = aov(`Yearly Electricity Costs` ~ Division, data = Tot_Energy_area_df)
 xkabledply(anovaDiv, title = "ANOVA result summary")
 
-
-
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
-house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$TOTROOMS, 
+house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$YEARMADERANGE, 
                          RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL,
-                         RECS2015$CLIMATE_REGION_PUB, RECS2015$MONEYPY, RECS2015$NHSLDMEM, RECS2015$EDUCATION)
+                         RECS2015$CLIMATE_REGION_PUB, RECS2015$MONEYPY, RECS2015$NHSLDMEM, RECS2015$EDUCATION,
+                         RECS2015$DOLLARNG, RECS2015$DOLLARFO, RECS2015$EQUIPM)
 
-colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity/sqft',"Total Rooms", 
+colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity/sqft',"Year Made Range", 
                           "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost",
-                          "Climate Region", "Income", "Number of Household Members", "Education")
-
-house_size["Time"] <- sample(c(0,1), size = nrow(house_size), replace = TRUE)
+                          "Climate Region", "Income", "Number of Household Members", "Education",
+                          "Total Natural Gas Cost", "Total Fuel Oil/Kerosene Costs", "SH_Type")
+write_excel_csv(house_size,
+                file = 'house_size.xlsx')
+#house_size["Time"] <- sample(c(0,1), size = nrow(house_size), replace = TRUE)
 
 house_size <- house_size %>%
   mutate(`Heat Pump` = case_when(`Heat Pump` == "No Heat Pump" ~ '0',
                                  `Heat Pump` == "Has a Heat Pump" ~ '1',
                                  `Heat Pump` == "NA" ~ "NA"))
 
+house_size <- subset(house_size, house_size$SH_Type != "Heat pump", drop = FALSE)
+
+house_size <- subset(house_size, !is.na(SH_Type), drop = FALSE)
+
 house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
 
-house_size_cor <- cor(house_size[2:length(house_size)])
+house_size_cor <- cor(house_size[-c(9,10,12,15)])
 
 corrplot.mixed(house_size_cor)
 
 #Regressions
 
-heatpump_lm <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump`+ `Climate Region` + `Total Rooms`, data = house_size)
+heatpump1 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`, data = house_size)
 
-heatpump_lm2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Total Rooms` + `Climate Region` +
-                    `Income`, data = house_size)
+heatpump2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
 
-heatpump_lm3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Total Rooms`+ `Climate Region` +
-                     `Income` + `Education`, data = house_size)
+heatpump3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs`, data = house_size)
 
-heatpump_lm4 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Total Rooms`+ `Climate Region` +
-                     `Income` + `Education` + `Number of Household Members`, data = house_size)
+heatpump4 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` +`Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
 
-xkabledply(anova(heatpump_lm, heatpump_lm2, heatpump_lm3, heatpump_lm4))
+xkabledply(anova(heatpump1, heatpump2, heatpump3, heatpump4))
+xtable(anova(heatpump1, heatpump2, heatpump3, heatpump4))
+xtable(heatpump4)
 
-summary(heatpump_lm3)
+summary(heatpump4)
+plot(heatpump4)
+vif(heatpump4)
 
-plot(heatpump_lm)
-plot(heatpump_lm3)
+#Matrix of the predictor variables
+X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` +
+                    `Climate Region` + `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
 
-#plot Final Regression Line------
+#Response variable
+y <- house_size$`Log Total Electricity/sqft`
 
-plot(`Total Electricity` ~ `SqFoot`+ `Heat Pump`+ `Climate Region` +
-       `Income` + `Education` + `Number of Household Members`, data = house_size)
+#Tuning lambda
+cvfit <- cv.glmnet(X, y, alpha = 0, standardize = TRUE)
 
-ggplot(data = house_size, 
-       aes(y = `Log Total Electricity/sqft`, 
-           x = house_size$`SqFoot`)) + 
-  geom_point(col = 'blue') +
-  geom_abline(slope = heatpump_lm4$coefficients[2], 
-              intercept = heatpump_lm4$coefficients[1], 
-              col = 'red') 
+#PLOT lambda ----
+plot(cvfit)
 
-#DID Regression work in progress
+#Optimal value of lambda fit
+fit <- glmnet(X, y, alpha = 0, lambda = cvfit$lambda.min, standardize = TRUE)
 
-pre_df <- data.frame(house_size %>%
-                       filter(`Time` == 0))
-  
-post_df <-  data.frame(house_size %>%
-                         filter(`Time` == 1)) 
+coef(fit)
+ty <- as.matrix(fit[[2]])
+ty <- ty[-1]
 
+#Training matrix with lambda set
+data_list <- list(X = X, y = y, lambda = cvfit$lambda.min)
+
+#Bootstapp 
+set.seed(123)
+boot_results <- Boot(ty[-1], R = 1000)
+
+#find Standard Errors  (work in progress)
+se <- apply(boot_results$t, 2, sd)
+print(se)
+
+#PLOT Final Regression Line------
+
+ggplot(data = house_size,
+       aes(x = `SqFoot`,
+           y = `Log Total Electricity/sqft`,
+           fill = `Heat Pump`)) +
+  geom_point() +
+  geom_smooth(method = "lm")
 #--------------------------Mapping the data-------------------------------------
 #Load USA states----
 
