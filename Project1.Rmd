@@ -329,8 +329,8 @@ central_air_df %>%
                                             "$80,000 to $99,999",
                                             "$100,000 to $119,999",
                                             "$120,000 to $139,999",
-                                            "$140,000 or more")))
-  ggplot(data = central_air_df, aes(x = Income,
+                                            "$140,000 or more")))%>%
+  ggplot(aes(x = Income,
              y = `Heat Pump Status`,
              fill = `Heat Pump Status`))+
   geom_bar(stat = "identity")+
