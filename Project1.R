@@ -866,8 +866,8 @@ xkabledply(anovaRes, title = "ANOVA comparison between the models")
 
 
 #----Stepwise Regression (Full Model)----------
-Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN)
-colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot")
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
 Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
 
 Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
@@ -876,7 +876,7 @@ Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
 
 str(Tot_Energy_area_df)
 
-fullmodel <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ Division +Climate +`Total Rooms` +SqFoot, data = Tot_Energy_area_df)
+fullmodel <- lm(`Yearly Electricity Costs`~ `Income` + `Urban Density`+ `Division` + `Climate` +`Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
 step(fullmodel)
 summary(fullmodel, title = paste("Full Model:", format(formula(fullmodel))))
 
