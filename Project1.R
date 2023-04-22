@@ -1,5 +1,5 @@
 #setwd() Meng Fei's WD  
-setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -589,14 +589,14 @@ states <- states %>%
                                       region == "louisiana" ~ "West South Central",
                                       region == "oklahoma" ~ "West South Central",
                                       region == "texas" ~ "West South Central",
-                                      region == "arizona" ~ "Mountain",
-                                      region == "colorado" ~ "Mountain",
-                                      region == "idaho" ~ "Mountain",
-                                      region == "new mexico" ~ "Mountain",
-                                      region == "montana" ~ "Mountain",
-                                      region == "utah" ~ "Mountain",
-                                      region == "nevada" ~ "Mountain",
-                                      region == "wyoming" ~ "Mountain",
+                                      region == "arizona" ~ "Mountain South",
+                                      region == "colorado" ~ "Mountain North",
+                                      region == "idaho" ~ "Mountain North",
+                                      region == "new mexico" ~ "Mountain South",
+                                      region == "montana" ~ "Mountain North",
+                                      region == "utah" ~ "Mountain North",
+                                      region == "nevada" ~ "Mountain South",
+                                      region == "wyoming" ~ "Mountain North",
                                       region == "alaska" ~ "Pacific",
                                       region == "california" ~ "Pacific",
                                       region == "hawaii" ~ "Pacific",
@@ -625,13 +625,6 @@ divisions_map + ditch_the_axes
 
 # rename "region" column from `states` dataframe to match `RECS2015` column name
 colnames(states) <- c("long", "lat", "group", "order", "DIVISION", "subregion")
-
-# subsetting divisions to find their average energy cost --> will remove because aggregate works better
-Tot_Energy_NewEngland <- Tot_Energy_area_df[Tot_Energy_area_df$Division == "new_england", ]
-NewEngland_CostMean <- mean(Tot_Energy_NewEngland$`Yearly Electricity Costs`)
-
-Tot_Energy_MiddleAtlantic <- Tot_Energy_area_df[Tot_Energy_area_df$Division == "middle_atlantic", ]
-MiddleAtlantic_CostMean <- mean(Tot_Energy_MiddleAtlantic$`Yearly Electricity Costs`)
 
 #PLOT Climate v. Yearly Electricity----
 
@@ -748,13 +741,12 @@ conusmedinc_df["Threshold"] <- conusmedinc_df$`Median Income` * .8
 
 conusmedinc_df <- conusmedinc_df[-31,]
 
+statepop <- data.frame(statepop)
 statepop <- statepop[-5]
 test <- merge(x = conusmedinc_df, 
               y = statepop, 
               by.x = "State",
               by.y = "full")
-
-test <- conusmedinc_df %>% inner_join(statepop, by = "full")
 
 #MAP IRA HP Subsidy----  
 plot_usmap(data = test, 
@@ -833,6 +825,18 @@ xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
 
 #REGRESSION - WORK IN PROGRESS PROJECT 2: Regression of electricity costs controlling for income, urban area type -----
 
+# Adding variables from RECS
+
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot", "Income")
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
+
+Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
+Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
+Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
+
+str(Tot_Energy_area_df)
+
 ## Linear Models for Income, Urban Density, and Division---
 
 fit1 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`, data =Tot_Energy_area_df)
@@ -866,15 +870,6 @@ xkabledply(anovaRes, title = "ANOVA comparison between the models")
 
 
 #----Stepwise Regression (Full Model)----------
-Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN)
-colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot")
-Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
-
-Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
-Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
-Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
-
-str(Tot_Energy_area_df)
 
 fullmodel <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ Division +Climate +`Total Rooms` +SqFoot, data = Tot_Energy_area_df)
 step(fullmodel)
