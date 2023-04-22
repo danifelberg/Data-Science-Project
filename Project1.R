@@ -835,8 +835,6 @@ Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`
 Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
 Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
 
-str(Tot_Energy_area_df)
-
 ## Linear Models for Income, Urban Density, and Division---
 
 fit1 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`, data =Tot_Energy_area_df)
@@ -859,7 +857,6 @@ plot(fit3)
 #library(interactions)
 #interact_plot(fit3, pred = `Urban Density`, modx = `Division`)
 
-
 ## Tables of LM comparisons, and ANOVA of LMs---
 xkabledply(fit1, title = paste("Model 1:", format(formula(fit1)) ))
 xkabledply(fit2, title = paste("Model 2 :", format(formula(fit2)) ))
@@ -868,16 +865,7 @@ xkabledply(fit3, title = paste("Model 3 (interactive):", format(formula(fit3))))
 anovaRes<-anova(fit1,fit2,fit3)
 xkabledply(anovaRes, title = "ANOVA comparison between the models")
 
-
 #----Stepwise Regression (Full Model)----------
-
-Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
-colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
-Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
-
-Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
-Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
-Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
 
 str(Tot_Energy_area_df)
 
