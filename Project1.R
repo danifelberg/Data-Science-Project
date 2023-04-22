@@ -3,7 +3,7 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics","ggfortify")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -24,6 +24,7 @@ library(car)
 library(glmnet)
 library(Metrics)
 library(boot)
+library(ggfortify)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -505,6 +506,11 @@ fit <- glmnet(X, y, alpha = 0, lambda = cvfit$lambda.min, standardize = TRUE)
 coef(fit)
 ty <- as.matrix(fit[[2]])
 ty <- ty[-1]
+
+#PLOT Ridge Regression
+
+fit <- glmnet::cv.glmnet(X, y)
+autoplot(fit, colour = 'blue')
 
 #Training matrix with lambda set
 data_list <- list(X = X, y = y, lambda = cvfit$lambda.min)

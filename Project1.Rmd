@@ -26,7 +26,7 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics", "ggfortify")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -46,6 +46,7 @@ library(xtable)
 library(car)
 library(glmnet)
 library(Metrics)
+library(ggfortify)
 ```
 
 
@@ -596,6 +597,9 @@ fit <- glmnet(X, y, alpha = 0, lambda = cvfit$lambda.min, standardize = TRUE)
 coef(fit)
 ty <- as.matrix(fit[[2]])
 ty <- ty[-1]
+
+fit <- glmnet::cv.glmnet(X, y)
+autoplot(fit, colour = 'blue')
 ```
 
 To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump  decreases total energy expenditures by \$1.4 per 1 square footage. 
