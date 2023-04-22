@@ -44,6 +44,7 @@ library(corrplot)
 library(reshape2)
 library(xtable)
 library(car)
+library(glmnet)
 ```
 
 
@@ -285,9 +286,7 @@ central_air_df %>%
 
 ```
 
-See above is a bar plot of Heat pump status as binary counts based on household income brakets. Based on ocular scrutiny, higher income brackets report larger ratios of having heatpumps. The $20k - $39k income bracket have the highest counts of not having heatpumps, and having heat pumps. The $40k - $59k; $140k to more income brackets have high ratios of having heat pumps.
-
-#put anova test here
+See above is a bar plot of Heat pump status as binary counts based on household income brakets. Based on ocular scrutiny, higher income brackets report larger ratios of having heatpumps. The $20k - $39k income bracket have the highest counts of not having heatpumps, and having heat pumps. The $40k - $59k; $140k to more income brackets have high ratios of having heat pumps. 
 
 ```{r}
 
@@ -318,9 +317,14 @@ central_air_df %>%
         axis.text.y=element_text())
 ```
 
-See above are boxplots of income brackets and total yearly electricity costs. On averge, lower incomes tend to spend less on electricity costs, compared to higher incomes. This is also supported in literature about energy poverty and cultural practices to save energy. 
+See above are boxplots of income brackets and total yearly electricity costs. On averge, lower incomes tend to spend less on electricity costs, compared to higher incomes. This is also supported in literature about energy poverty and cultural practices to save energy. see below an ANOVA table of the total electricity related to Income. We observe that higher incomes indeed spend more on electricity than lower incomes.
 
-#put Anova test here
+```{r}
+#ANOVA Test (Income level)----
+anovaInc = aov(TotElectricity ~ Income, data = central_air_df)
+xkabledply(anovaInc, title = "ANOVA result summary")
+
+```
 
 ```{r}
 #Spatial Prep------
@@ -420,4 +424,88 @@ Tot_Energy_area_df %>%
 
 ```
 
-See above is a boxplot of census divisions and total yearly electricity costs. We can observe that households in rural areas spend more on electricity than Urban or Urban Clusters. We can also observe that urban areas genereally have high populations which may explain the more distant outliers. 
+See above is a boxplot of census divisions and total yearly electricity costs. We can observe that households in rural areas spend more on electricity than Urban or Urban Clusters. We can also observe that urban areas generally have high populations which may explain the more distant outliers. 
+
+See below is an ANOVA table for both ubran density and division variables related to total yearly electricity costs. This suggests that the mean differences between urban density and division variables respective to total yearly electricity costs is influential on total yearly income.
+
+```{r}
+#ANOVA Test (Urban density)----
+
+anovaUrb = aov(`Yearly Electricity Costs` ~ `Urban Density`, data = Tot_Energy_area_df)
+xkabledply(anovaUrb, title = "ANOVA result summary")
+
+anovaDiv = aov(`Yearly Electricity Costs` ~ Division + `Urban Density`, data = Tot_Energy_area_df)
+xkabledply(anovaDiv, title = "ANOVA result summary")
+
+```
+
+```{r}
+#REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
+
+house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$YEARMADERANGE, RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL, RECS2015$CLIMATE_REGION_PUB, RECS2015$MONEYPY, RECS2015$NHSLDMEM, RECS2015$EDUCATION, RECS2015$DOLLARNG, RECS2015$DOLLARFO, RECS2015$EQUIPM)
+
+colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity/sqft',"Year Made Range", "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost","Climate Region", "Income", "Number of Household Members", "Education", "Total Natural Gas Cost", "Total Fuel Oil/Kerosene Costs", "SH_Type")
+
+house_size <- house_size %>%
+  mutate(`Heat Pump` = case_when(`Heat Pump` == "No Heat Pump" ~ '0',
+                                 `Heat Pump` == "Has a Heat Pump" ~ '1',
+                                 `Heat Pump` == "NA" ~ "NA"))
+
+house_size <- subset(house_size, house_size$SH_Type != "Heat pump", drop = FALSE)
+
+house_size <- subset(house_size, !is.na(SH_Type), drop = FALSE)
+
+house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
+
+#Regressions
+
+heatpump1 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`, data = house_size)
+
+heatpump2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+
+heatpump3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs`, data = house_size)
+
+heatpump4 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` +`Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+
+xkabledply(anova(heatpump1, heatpump2, heatpump3, heatpump4))
+
+```
+
+See above is an ANOVA table of four different regressions of the change in total energy per squarefootage and heat pump status, while adding controlling for house and household demographic factors. Some sociological controls are income, education since different incomes and educational levels have different yearly electricity costs. Housing and fuel types are controlled in square footage, climate region, and main heating fuel type to isolate the effects of heat pumps. 
+
+```{r}
+
+plot(heatpump4)
+summary(heatpump4)
+vif(heatpump4)
+
+```
+
+See above is a result of the best fitted regression (4th, with all controls). It is also observed that there are generally low Variance Inflation Factors (VIFs) in the regression. The main exception is the dummy variable of heat pump status, but this is expected since dummy variables typically have large VIFs. As observed in the residual plots, the residuals are pretty uniform, which loosely matches the actual data. So, it makes it difficult to determine significance for our variables, especially since some variables interact with each other in a system and may be colinear. This is one possible explanation of why heat pump dummy variable does not have statistical significance at the 5% level.
+
+```{r}
+#Matrix of the predictor variables
+X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` +
+                    `Climate Region` + `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+
+#Response variable
+y <- house_size$`Log Total Electricity/sqft`
+
+#Tuning lambda
+cvfit <- cv.glmnet(X, y, alpha = 0, standardize = TRUE)
+
+#PLOT Lambda ----
+plot(cvfit)
+
+#Optimal value of lambda fit
+fit <- glmnet(X, y, alpha = 0, lambda = cvfit$lambda.min, standardize = TRUE)
+
+coef(fit)
+ty <- as.matrix(fit[[2]])
+ty <- ty[-1]
+```
+
+To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \$0.00959 In more digestible terms, having a heat pump  decreases total energy expenditures by \$10 per 1000 square footage. 
