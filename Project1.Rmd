@@ -26,7 +26,7 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -45,6 +45,7 @@ library(reshape2)
 library(xtable)
 library(car)
 library(glmnet)
+library(Metrics)
 ```
 
 
@@ -438,6 +439,40 @@ anovaDiv = aov(`Yearly Electricity Costs` ~ Division + `Urban Density`, data = T
 xkabledply(anovaDiv, title = "ANOVA result summary")
 
 ```
+```{r}
+#PLOT Scatter-plot of US Census v. Yearly Electricity Costs, Controlling for Climate----
+ggplot(Tot_Energy_area_df, aes(x=Division, 
+                               y=`Yearly Electricity Costs`, 
+                               color=Climate, 
+                               fill = Climate)) +
+  geom_bar(stat = "identity") +
+  labs(x="US Census Division", y="Yearly Electricity Costs", title="Division vs. Electricity Cost, Colored by Climate") +
+   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
+        axis.text.y=element_text())
+
+```
+
+This shows an ANOVA table comparing different regressions of the dependent Y variable, total electricity expenditures, respectively on Division, and Climate type. Overall, it is observed significance at the 5% level for climates that are Hot and Humid, mixed-humid, and hot-dry/mixed dry. This is also shown in our prior graph which shows these climate categories have overall higher averages for total energy costs. It is also observed that the divisions West South Cental, New England, Middle Atlantic, and East South central are significant at the 5% level. This means that these regions have higher total expenditures on heating or cooling, or both. This is also supported visually on our graphs where these divisions report higher averages for total electricity expenditures. 
+
+```{r}
+
+# Preparing Linear Models for climate and census division
+lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
+lm.Climate <- lm(`Yearly Electricity Costs`~Climate, data = Tot_Energy_area_df)
+lm.Division.Climate <- lm(`Yearly Electricity Costs`~Division+Climate, data = Tot_Energy_area_df)
+lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Division*Climate, data = Tot_Energy_area_df)
+
+# Tables of LM comparisons, and ANOVA of LMs (Elect cost, climate, census division)
+xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
+xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
+xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
+xkabledply(lm.DivCli.interaction)
+
+anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
+#ANOVA test (which Regression is best) ----
+xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
+```
+
 
 ```{r}
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----

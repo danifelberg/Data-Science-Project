@@ -3,7 +3,7 @@ setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -797,11 +797,14 @@ Tot_Energy_area_df %>%
   labs(title = "Yearly Electricity Expenditure by Climate")
 
 #PLOT Scatter-plot of US Census v. Yearly Electricity Costs, Controlling for Climate----
-
-ggplot(Tot_Energy_area_df, aes(x=Division, y=`Yearly Electricity Costs`, color=Climate)) +
-  geom_point() +
-  labs(x="US Census Division", y="Yearly Electricity Costs") +
-  labs(title="Division vs. Electricity Cost, Colored by Climate")
+ggplot(Tot_Energy_area_df, aes(x=Division, 
+                               y=`Yearly Electricity Costs`, 
+                               color=Climate, 
+                               fill = Climate)) +
+  geom_bar(stat = "identity") +
+  labs(x="US Census Division", y="Yearly Electricity Costs", title="Division vs. Electricity Cost, Colored by Climate") +
+  theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
+        axis.text.y=element_text())
 
 # Preparing Linear Models for climate and census division
 lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
