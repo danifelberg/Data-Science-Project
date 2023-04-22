@@ -447,8 +447,7 @@ colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electrici
                           "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost",
                           "Climate Region", "Income", "Number of Household Members", "Education",
                           "Total Natural Gas Cost", "Total Fuel Oil/Kerosene Costs", "SH_Type")
-write_excel_csv(house_size,
-          file = 'house_size.xlsx')
+#write_excel_csv(house_size,file = 'house_size.xlsx')
 #house_size["Time"] <- sample(c(0,1), size = nrow(house_size), replace = TRUE)
 
 house_size <- house_size %>%
@@ -488,8 +487,8 @@ plot(heatpump4)
 vif(heatpump4)
 
 #Matrix of the predictor variables
-X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` +
-                    `Climate Region` + `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
+                    `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
 
 #Response variable
 y <- house_size$`Log Total Electricity/sqft`
@@ -796,7 +795,7 @@ Tot_Energy_area_df %>%
   geom_boxplot() +
   labs(title = "Yearly Electricity Expenditure by Climate")
 
-#PLOT Scatter-plot of US Census v. Yearly Electricity Costs, Controlling for Climate----
+#PLOT Barplots of US Census v. Yearly Electricity Costs, Controlling for Climate----
 ggplot(Tot_Energy_area_df, aes(x=Division, 
                                y=`Yearly Electricity Costs`, 
                                color=Climate, 
