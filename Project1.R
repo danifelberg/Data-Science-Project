@@ -873,3 +873,10 @@ fullmodel <- lm(`Yearly Electricity Costs`~ `Income` + `Urban Density`+ `Divisio
 step(fullmodel)
 summary(fullmodel, title = paste("Full Model:", format(formula(fullmodel))))
 
+#----Regression Tree
+
+loadPkg("ISLR")
+loadPkg("tree") 
+
+treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
+summary(treefit)
