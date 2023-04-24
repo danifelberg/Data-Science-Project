@@ -876,7 +876,21 @@ summary(fullmodel, title = paste("Full Model:", format(formula(fullmodel))))
 #----Regression Tree
 
 loadPkg("ISLR")
-loadPkg("tree") 
+loadPkg("tree")
+loadPkg("rpart")
+loadPkg("rpart.plot")
+library(rattle)
+library(fancyRpartPlot)
 
-treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
+# renaming columns for the formula
+names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
+
+# tree regressions
+treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df)
 summary(treefit)
+plot(treefit)
+text(treefit,cex=0.75)
+
+treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df, control = list(maxdepth = 8, cp=0.009) )
+summary(treefitRpart)
+fancyRpartPlot(treefitRpart, cex=0.9)
