@@ -473,8 +473,7 @@ corrplot.mixed(house_size_cor)
 
 heatpump1 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`, data = house_size)
 
-heatpump2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
-                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+heatpump2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region`, data = house_size)
 
 heatpump3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
                   `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs`, data = house_size)
@@ -492,9 +491,12 @@ vif(heatpump4)
 par(mfrow=c(2,2))
 plot(heatpump4)
 
+#library(stargazer)
+#stargazer(heatpump1, heatpump2, heatpump3, heatpump4, title="Results", align=TRUE)
+
 #Matrix of the predictor variables
 X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
-                    `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+                    `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs`, data = house_size)
 
 #Response variable
 y <- house_size$`Log Total Electricity/sqft`
