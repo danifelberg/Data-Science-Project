@@ -1,9 +1,9 @@
 #setwd() Meng Fei's WD  
-#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics","ggfortify")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics","ggfortify","cowplots","rattle", "fancyRpartPlot")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -25,6 +25,9 @@ library(glmnet)
 library(Metrics)
 library(boot)
 library(ggfortify)
+library(cowplot)
+library(rattle)
+library(fancyRpartPlot)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -307,7 +310,7 @@ central_air_df %>%
   labs(title = "Income Bracket And Heat Pump Status",
        ylab = "")+
   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)),
-        axis.text.y=element_blank()) #needs to fix income brackets to be ascending
+        axis.text.y=element_blank()) 
 
 #BOXPLOT of income and yearly energy costs----
 central_air_df["TotElectricity"] <- RECS2015$DOLLAREL
@@ -437,7 +440,7 @@ xkabledply(anovaUrb, title = "ANOVA result summary")
 anovaDiv = aov(`Yearly Electricity Costs` ~ Division, data = Tot_Energy_area_df)
 xkabledply(anovaDiv, title = "ANOVA result summary")
 
-#REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
+#REGRESSION Heatpump with controls -----
 
 house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$YEARMADERANGE, 
                          RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL,
@@ -484,8 +487,10 @@ xtable(anova(heatpump1, heatpump2, heatpump3, heatpump4))
 xtable(heatpump4)
 
 summary(heatpump4)
-plot(heatpump4)
 vif(heatpump4)
+
+par(mfrow=c(2,2))
+plot(heatpump4)
 
 #Matrix of the predictor variables
 X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
@@ -497,7 +502,7 @@ y <- house_size$`Log Total Electricity/sqft`
 #Tuning lambda
 cvfit <- cv.glmnet(X, y, alpha = 0, standardize = TRUE)
 
-#PLOT Lambda ----
+#PLOT RIDGE Regression Lambda ----
 plot(cvfit)
 
 #Optimal value of lambda fit
@@ -505,7 +510,7 @@ fit <- glmnet(X, y, alpha = 0, lambda = cvfit$lambda.min, standardize = TRUE)
 
 coef(fit)
 ty <- as.matrix(fit[[2]])
-ty <- ty[-1]
+xtable(ty)
 
 #PLOT Ridge Regression
 
@@ -514,14 +519,6 @@ autoplot(fit, colour = 'blue')
 
 #Training matrix with lambda set
 data_list <- list(X = X, y = y, lambda = cvfit$lambda.min)
-
-#Bootstapp 
-set.seed(123)
-boot_results <- Boot(ty[-1], R = 1000)
-
-#find Standard Errors  (work in progress)
-se <- apply(boot_results$t, 2, sd)
-print(se)
 
 #PLOT Final Regression Line------
 
@@ -589,14 +586,14 @@ states <- states %>%
                                       region == "louisiana" ~ "West South Central",
                                       region == "oklahoma" ~ "West South Central",
                                       region == "texas" ~ "West South Central",
-                                      region == "arizona" ~ "Mountain South",
-                                      region == "colorado" ~ "Mountain North",
-                                      region == "idaho" ~ "Mountain North",
-                                      region == "new mexico" ~ "Mountain South",
-                                      region == "montana" ~ "Mountain North",
-                                      region == "utah" ~ "Mountain North",
-                                      region == "nevada" ~ "Mountain South",
-                                      region == "wyoming" ~ "Mountain North",
+                                      region == "arizona" ~ "Mountain",
+                                      region == "colorado" ~ "Mountain",
+                                      region == "idaho" ~ "Mountain",
+                                      region == "new mexico" ~ "Mountain",
+                                      region == "montana" ~ "Mountain",
+                                      region == "utah" ~ "Mountain",
+                                      region == "nevada" ~ "Mountain",
+                                      region == "wyoming" ~ "Mountain",
                                       region == "alaska" ~ "Pacific",
                                       region == "california" ~ "Pacific",
                                       region == "hawaii" ~ "Pacific",
@@ -823,12 +820,12 @@ anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.
 #ANOVA test (which Regression is best) ----
 xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
 
-#REGRESSION - WORK IN PROGRESS PROJECT 2: Regression of electricity costs controlling for income, urban area type -----
+#REGRESSION Regression of electricity costs controlling for income, urban area type -----
 
 # Adding variables from RECS
 
 Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
-colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot", "Income")
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
 Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
 
 Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
@@ -865,23 +862,15 @@ xkabledply(fit3, title = paste("Model 3 (interactive):", format(formula(fit3))))
 anovaRes<-anova(fit1,fit2,fit3)
 xkabledply(anovaRes, title = "ANOVA comparison between the models")
 
-#----Stepwise Regression (Full Model)----------
-
-str(Tot_Energy_area_df)
-
-fullmodel <- lm(`Yearly Electricity Costs`~ `Income` + `Urban Density`+ `Division` + `Climate` +`Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
-step(fullmodel)
-summary(fullmodel, title = paste("Full Model:", format(formula(fullmodel))))
-
-#----Regression Tree
+#STEPWISE Regression (Full Model)
+#REGRESSION TREE----
 
 loadPkg("ISLR")
 loadPkg("tree")
 loadPkg("rpart")
 loadPkg("rpart.plot")
-library(rattle)
-library(fancyRpartPlot)
 
+treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
 # renaming columns for the formula
 names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
 
