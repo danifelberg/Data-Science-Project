@@ -15,18 +15,12 @@ output:
 ---
 
 ```{r init, include=F}
-# The package "ezids" (EZ Intro to Data Science) includes some helper functions we developed for the course. 
-# Some of the frequently used functions are loadPkg(), xkabledply(), xkablesummary(), uzscale(), etc.
-# You will need to install it (once) from GitHub.
-# library(devtools)
-# devtools::install_github("physicsland/ezids")
-# Then load the package in your R session.
 #setwd() Meng Fei's WD  
 setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
-#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics", "ggfortify")
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics","ggfortify","cowplots","rattle", "fancyRpartPlot")
 library(survey)
 library(dplyr)
 library(ggmap)
@@ -46,7 +40,9 @@ library(xtable)
 library(car)
 library(glmnet)
 library(Metrics)
+library(boot)
 library(ggfortify)
+library(cowplot)
 ```
 
 
@@ -603,3 +599,101 @@ autoplot(fit, colour = 'blue')
 ```
 
 To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump  decreases total energy expenditures by \$1.4 per 1 square footage. 
+
+```{r}
+
+# Preparing Linear Models for climate and census division
+lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
+lm.Climate <- lm(`Yearly Electricity Costs`~Climate, data = Tot_Energy_area_df)
+lm.Division.Climate <- lm(`Yearly Electricity Costs`~Division+Climate, data = Tot_Energy_area_df)
+lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Division*Climate, data = Tot_Energy_area_df)
+
+# Tables of LM comparisons, and ANOVA of LMs (Elect cost, climate, census division)
+xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
+xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
+xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
+xkabledply(lm.DivCli.interaction)
+
+anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
+#ANOVA test (which Regression is best) ----
+xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
+
+```
+ANOVA regression of Yearly Electricity Costs related to Climate and Division.
+
+
+```{r}
+#REGRESSION Regression of electricity costs controlling for income, urban area type -----
+
+# Adding variables from RECS
+
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
+
+Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
+Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
+Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
+
+## Linear Models for Income, Urban Density, and Division---
+
+fit1 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`, data =Tot_Energy_area_df)
+fit2 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ Division, data = Tot_Energy_area_df)
+fit3 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ Division +`Urban Density`*Division , data = Tot_Energy_area_df)
+
+## Multicollinearity test
+xkablevif(fit1)
+xkablevif(fit2)
+xkablevif(fit3)
+
+## Plot for fitted model
+plot(fit1)
+plot(fit2)
+plot(fit3)
+
+#step(fit3)
+
+#library(jtools)
+#library(interactions)
+#interact_plot(fit3, pred = `Urban Density`, modx = `Division`)
+
+## Tables of LM comparisons, and ANOVA of LMs---
+xkabledply(fit1, title = paste("Model 1:", format(formula(fit1)) ))
+xkabledply(fit2, title = paste("Model 2 :", format(formula(fit2)) ))
+xkabledply(fit3, title = paste("Model 3 (interactive):", format(formula(fit3))))
+
+anovaRes<-anova(fit1,fit2,fit3)
+xkabledply(anovaRes, title = "ANOVA comparison between the models")
+
+```
+
+
+ANOVA regression of Income related to Urban Density.
+
+
+```{r}
+#STEPWISE Regression (Full Model)
+#REGRESSION TREE----
+
+loadPkg("ISLR")
+loadPkg("tree")
+loadPkg("rpart")
+loadPkg("rpart.plot")
+
+treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
+# renaming columns for the formula
+names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
+
+# tree regressions
+treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df)
+summary(treefit)
+plot(treefit)
+text(treefit,cex=0.75)
+
+treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df, control = list(maxdepth = 8, cp=0.009) )
+summary(treefitRpart)
+fancyRpartPlot(treefitRpart, cex=0.9)
+
+```
+
+Regression Tree of Yearly Electricity costs and influencing factors like Income, Urban Density, Diviison and Climate.
