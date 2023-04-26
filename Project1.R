@@ -28,6 +28,7 @@ library(ggfortify)
 library(cowplot)
 library(rattle)
 library(fancyRpartPlot)
+library(stargazer)
 
 #LoadData and Example Code for Assigning weights----- 
 #this is example code from the EIA weights doc:
@@ -485,14 +486,13 @@ xkabledply(anova(heatpump1, heatpump2, heatpump3, heatpump4))
 xtable(anova(heatpump1, heatpump2, heatpump3, heatpump4))
 xtable(heatpump4)
 
-summary(heatpump4)
-vif(heatpump4)
+summary(heatpump3)
+xtable(vif(heatpump3))
 
 par(mfrow=c(2,2))
-plot(heatpump4)
+plot(heatpump3)
 
-#library(stargazer)
-#stargazer(heatpump1, heatpump2, heatpump3, heatpump4, title="Results", align=TRUE)
+stargazer(heatpump1, heatpump2, heatpump3, title="Results", align=TRUE)
 
 #Matrix of the predictor variables
 X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
