@@ -1,5 +1,5 @@
 #setwd() Meng Fei's WD  
-setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -588,14 +588,14 @@ states <- states %>%
                                       region == "louisiana" ~ "West South Central",
                                       region == "oklahoma" ~ "West South Central",
                                       region == "texas" ~ "West South Central",
-                                      region == "arizona" ~ "Mountain",
-                                      region == "colorado" ~ "Mountain",
-                                      region == "idaho" ~ "Mountain",
-                                      region == "new mexico" ~ "Mountain",
-                                      region == "montana" ~ "Mountain",
-                                      region == "utah" ~ "Mountain",
-                                      region == "nevada" ~ "Mountain",
-                                      region == "wyoming" ~ "Mountain",
+                                      region == "arizona" ~ "Mountain South",
+                                      region == "colorado" ~ "Mountain North",
+                                      region == "idaho" ~ "Mountain North",
+                                      region == "new mexico" ~ "Mountain South",
+                                      region == "montana" ~ "Mountain North",
+                                      region == "utah" ~ "Mountain North",
+                                      region == "nevada" ~ "Mountain South",
+                                      region == "wyoming" ~ "Mountain North",
                                       region == "alaska" ~ "Pacific",
                                       region == "california" ~ "Pacific",
                                       region == "hawaii" ~ "Pacific",
@@ -817,8 +817,10 @@ xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Clima
 xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
 xkabledply(lm.DivCli.interaction)
 
-anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
+
 #ANOVA test (which Regression is best) ----
+anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
+
 xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
 
 #REGRESSION Regression of electricity costs controlling for income, urban area type -----
@@ -858,7 +860,7 @@ plot(fit3)
 ## Tables of LM comparisons, and ANOVA of LMs---
 xkabledply(fit1, title = paste("Model 1:", format(formula(fit1)) ))
 xkabledply(fit2, title = paste("Model 2 :", format(formula(fit2)) ))
-xkabledply(fit3, title = paste("Model 3 (interactive):", format(formula(fit3))))
+xkabledply(fit3)
 
 anovaRes<-anova(fit1,fit2,fit3)
 xkabledply(anovaRes, title = "ANOVA comparison between the models")
@@ -871,16 +873,17 @@ loadPkg("tree")
 loadPkg("rpart")
 loadPkg("rpart.plot")
 
-treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
 # renaming columns for the formula
-names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
+Tot_Energy_area_df_2 <- Tot_Energy_area_df
+names(Tot_Energy_area_df_2) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
 
 # tree regressions
-treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df)
+#treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
+treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df_2)
 summary(treefit)
 plot(treefit)
 text(treefit,cex=0.75)
 
-treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df, control = list(maxdepth = 8, cp=0.009) )
+treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df_2, control = list(maxdepth = 8, cp=0.009) )
 summary(treefitRpart)
 fancyRpartPlot(treefitRpart, cex=0.9)
