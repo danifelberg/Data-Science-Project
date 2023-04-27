@@ -887,3 +887,31 @@ text(treefit,cex=0.75)
 treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df_2, control = list(maxdepth = 8, cp=0.009) )
 summary(treefitRpart)
 fancyRpartPlot(treefitRpart, cex=0.9)
+
+treefitRpart2 <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df_2)
+summary(treefitRpart2)
+fancyRpartPlot(treefitRpart2, cex=0.9)
+
+# Stepwise?
+my.tree = tree(Yearly_Electricity_Costs  ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data=Tot_Energy_area_df_2)
+prune.tree(my.tree,best=5)
+my.tree.seq = prune.tree(my.tree)
+plot(my.tree.seq)
+
+deviance1 <- my.tree.seq$dev
+deviance1
+
+# df = 34110
+
+pchisq( deviance1[ length(deviance1) ], length(test.set$Yearly_Electricity_Costs)-1 , lower.tail = F )
+pchisq( deviance1[ length(deviance1)-6 ], length(test.set$Yearly_Electricity_Costs)-7 , lower.tail = F )
+
+# Testing tree regression --> Not working?
+
+predictions <- predict(treefitRpart2)
+mse_values <- summary(treefitRpart2)$MSE
+rmse <- sqrt(mean(mse_values))
+
+
+predicted_values <- predict(treefitRpart2, Tot_Energy_area_df_2, type = "vector")
+abs_diff <- abs(Tot_Energy_area_df_2$Yearly_Electricity_Costs - predicted_values)
