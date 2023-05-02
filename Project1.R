@@ -1,5 +1,5 @@
 #setwd() Meng Fei's WD  
-#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -466,33 +466,47 @@ house_size <- subset(house_size, !is.na(SH_Type), drop = FALSE)
 
 house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
 
-house_size_cor <- cor(house_size[-c(9,10,12,15)])
+house_size$`Heat Pump` <- as.numeric(house_size$`Heat Pump`)
+
+house_size_cor <- cor(house_size[-c(1,4,9,10,12,15)])
 
 corrplot.mixed(house_size_cor)
 
 #Regressions
+heatpump0 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump`, data = house_size)
 
 heatpump1 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`, data = house_size)
 
-heatpump2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region`, data = house_size)
+heatpump2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot` + `Heat Pump` + `Heat Pump`:`Log SqFoot`+ 
+                  `SH_Type`, data = house_size)
 
-heatpump3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
+house_size <- subset(house_size, (`Heating Cost`) != 0, drop = FALSE)
+house_size$`Heating Cost` <- as.numeric(house_size$`Heating Cost`)
+
+heatpump3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot` + `Heat Pump`:`Log SqFoot`+ `Heat Pump` + 
                   `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs`, data = house_size)
 
-heatpump4 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` +`Climate Region` + 
+heatpump4 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+  `Heat Pump`:`Log SqFoot`+ `Heat Pump` + 
                   `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
 
-xkabledply(anova(heatpump1, heatpump2, heatpump3, heatpump4))
-xtable(anova(heatpump1, heatpump2, heatpump3, heatpump4))
-xtable(heatpump4)
+xkabledply(anova(heatpump0, heatpump1, heatpump2, heatpump3, heatpump4))
+xtable(anova(heatpump0, heatpump1, heatpump2, heatpump3, heatpump4))
 
+summary(heatpump0)
+summary(heatpump1)
+summary(heatpump2)
 summary(heatpump3)
+summary(heatpump4)
 xtable(vif(heatpump3))
 
 par(mfrow=c(2,2))
+plot(heatpump0)
+plot(heatpump1)
+plot(heatpump2)
 plot(heatpump3)
+plot(heatpump4)
 
-stargazer(heatpump1, heatpump2, heatpump3, title="Results", align=TRUE)
+stargazer(heatpump3, title="Results")
 
 #Matrix of the predictor variables
 X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
@@ -817,7 +831,7 @@ xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Clima
 xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
 xkabledply(lm.DivCli.interaction)
 
-
+anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
 #ANOVA test (which Regression is best) ----
 anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
 
@@ -860,7 +874,7 @@ plot(fit3)
 ## Tables of LM comparisons, and ANOVA of LMs---
 xkabledply(fit1, title = paste("Model 1:", format(formula(fit1)) ))
 xkabledply(fit2, title = paste("Model 2 :", format(formula(fit2)) ))
-xkabledply(fit3)
+xkabledply(fit3, title = paste("Model 3 (interactive):", format(formula(fit3))))
 
 anovaRes<-anova(fit1,fit2,fit3)
 xkabledply(anovaRes, title = "ANOVA comparison between the models")
@@ -873,18 +887,17 @@ loadPkg("tree")
 loadPkg("rpart")
 loadPkg("rpart.plot")
 
+treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
 # renaming columns for the formula
-Tot_Energy_area_df_2 <- Tot_Energy_area_df
-names(Tot_Energy_area_df_2) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
+names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
 
-# tree regressions
-#treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
-treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df_2)
+#tree regressions
+treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df)
 summary(treefit)
 plot(treefit)
 text(treefit,cex=0.75)
 
-treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df_2, control = list(maxdepth = 8, cp=0.009) )
+treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df, control = list(maxdepth = 8, cp=0.009) )
 summary(treefitRpart)
 fancyRpartPlot(treefitRpart, cex=0.9)
 
@@ -892,7 +905,7 @@ treefitRpart2 <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + 
 summary(treefitRpart2)
 fancyRpartPlot(treefitRpart2, cex=0.9)
 
-# Stepwise?
+#Stepwise Regression?
 my.tree = tree(Yearly_Electricity_Costs  ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data=Tot_Energy_area_df_2)
 prune.tree(my.tree,best=5)
 my.tree.seq = prune.tree(my.tree)
@@ -911,7 +924,6 @@ pchisq( deviance1[ length(deviance1)-6 ], length(test.set$Yearly_Electricity_Cos
 predictions <- predict(treefitRpart2)
 mse_values <- summary(treefitRpart2)$MSE
 rmse <- sqrt(mean(mse_values))
-
 
 predicted_values <- predict(treefitRpart2, Tot_Energy_area_df_2, type = "vector")
 abs_diff <- abs(Tot_Energy_area_df_2$Yearly_Electricity_Costs - predicted_values)
