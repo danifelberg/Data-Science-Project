@@ -638,8 +638,8 @@ Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
 ## Linear Models for Income, Urban Density, and Division---
 
 fit1 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`, data =Tot_Energy_area_df)
-fit2 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ Division, data = Tot_Energy_area_df)
-fit3 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ Division +`Urban Density`*Division , data = Tot_Energy_area_df)
+fit2 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ `Division`, data = Tot_Energy_area_df)
+fit3 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ `Division` +`Urban Density`:`Division`, data = Tot_Energy_area_df)
 
 ## Multicollinearity test
 xkablevif(fit1)
@@ -659,8 +659,8 @@ plot(fit3)
 
 ## Tables of LM comparisons, and ANOVA of LMs---
 xkabledply(fit1, title = paste("Model 1:", format(formula(fit1)) ))
-xkabledply(fit2, title = paste("Model 2 :", format(formula(fit2)) ))
-xkabledply(fit3, title = paste("Model 3 (interactive):", format(formula(fit3))))
+xkabledply(fit2, title = paste("Model 2:", format(formula(fit2)) ))
+xkabledply(fit3) 
 
 anovaRes<-anova(fit1,fit2,fit3)
 xkabledply(anovaRes, title = "ANOVA comparison between the models")
@@ -680,11 +680,10 @@ loadPkg("tree")
 loadPkg("rpart")
 loadPkg("rpart.plot")
 
-treefit <- tree(log(`Yearly Electricity Costs`) ~ `Income` + `Urban Density` + `Division` + `Climate` + `Total Rooms` + `SqFoot`, data = Tot_Energy_area_df)
 # renaming columns for the formula
 names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
 
-# tree regressions
+#tree regressions
 treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df)
 summary(treefit)
 plot(treefit)
@@ -692,8 +691,29 @@ text(treefit,cex=0.75)
 
 treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df, control = list(maxdepth = 8, cp=0.009) )
 summary(treefitRpart)
-fancyRpartPlot(treefitRpart, cex=0.9)
+#fancyRpartPlot(treefitRpart, cex=0.9)
 
+treefitRpart2 <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df)
+summary(treefitRpart2)
+#fancyRpartPlot(treefitRpart2, cex=0.9)
+
+#Stepwise Regression?
+my.tree = tree(Yearly_Electricity_Costs  ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data=Tot_Energy_area_df)
+prune.tree(my.tree,best=5)
+my.tree.seq = prune.tree(my.tree)
+plot(my.tree.seq)
+
+deviance1 <- my.tree.seq$dev
+deviance1
+
+# Testing tree regression --> Not working?
+
+predictions <- predict(treefitRpart2)
+mse_values <- summary(treefitRpart2)$MSE
+rmse <- sqrt(mean(mse_values))
+
+predicted_values <- predict(treefitRpart2, Tot_Energy_area_df, type = "vector")
+abs_diff <- abs(Tot_Energy_area_df$Yearly_Electricity_Costs - predicted_values)
 ```
 
 Regression Tree of Yearly Electricity costs and influencing factors like Income, Urban Density, Diviison and Climate.
