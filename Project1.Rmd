@@ -1,5 +1,5 @@
 ---
-title: "Project 1 - Household Energy Expenditures - Electricity"
+title: "Project 2 - Household Energy Expenditures - Electricity"
 author: "Sean Franco, Mei Fei Hung, Daniel Felberg"
 date: "`r Sys.Date()`"
 output:
@@ -16,7 +16,7 @@ output:
 
 ```{r init, include=F}
 #setwd() Meng Fei's WD  
-setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
 #setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
 library(readr)
 library(ggplot2)
@@ -58,12 +58,26 @@ options(scientific=T, digits = 3)
 # options(scipen=9, digits = 3) 
 ```
 
-Introduction:
-This study examines the impact of household energy expenditure reported during the year 2015 from data from the Energy Information Administration. The study attempts to conduct exploratory data analysis (EDA) related to yearly household energy consumption, the expenditures of energy related to climate region, census income levels, and appliance types. The dataset for this project is from the 2015 survey from the Energy Information Administration which is the 14th edition of this national household survey. The year 2015 was chosen because it was before the coronavirus, and that it was after the 2008 financial crisis. Additionally, this survey is randomly sampled, and the most complete version of the survey with all amendments. 
+# 1 Introduction
+Electricity consumption is related to people's life and survival, but people seldom pay attention to it. Do you know which appliance in your household uses the most electricity? According to the national household survey by EIA (U.S. Energy Information Administration), electricity used in heating is the highest in electricity consumption. Besides appliances, what are other important  variables that affects electricity costs? The purpose of this study is to answer these questions: 
+-What factors impact the electricity costs related to heat pump implementation?
+--Regression of electricity costs per sqft on households with heat pumps controlling for housing size, ex: number of rooms, square footage. 
+-What factors impact the total electricity costs of a US household, and how strong is that impact?
+--Regressing total yearly electricity costs by US Census Divisions and climate type.
+--Regression of electricity costs controlling for income, urban area type
+ANOVA tests of best fit model.
 
-Methods:
+ 
+
+# 2 Methods
+This study examines the impact of household energy expenditure reported during the year 2015 from data from the Energy Information Administration. The study attempts to conduct exploratory data analysis (EDA) related to yearly household energy consumption, the expenditures of energy related to climate region, census income levels, and appliance types.
+
+The data set for this project is from the 2015 survey from the Energy Information Administration which is the 14th edition of this national household survey. The year 2015 was chosen because it was before the coronavirus, and that it was after the 2008 financial crisis. Additionally, this survey is randomly sampled, and the most complete version of the survey with all amendments.
+
+
+
+# 3 Exploratory Data Analysis
 	For the most part, the attributes were pulled from the existing EIA survey data, and examined for normality. If heteroskedasticity was present, then leverage point outliers were removed to manipulate the data to normalize it. This could be a large assumption, but our rationale was that many of these outliers were not representative of the majority of the data points for the country. For example, a large outlier for total yearly electricity expenditure is likely to be from a very wealthy individual, let’s say the household for Jeff Bezos and family who can afford high prices for electricity, rather than any given working class family household. Almost all our variables needed 
-
 
 ```{r}
 #LoadData ----- 
@@ -149,6 +163,7 @@ test %>%
 ```
 See above is a plot of common appliances and their total yearly electricity usage. We can notice that waterheating, spaceheating and air conditioning, are among the top appliances that consume electricity. Examining central air costs for heating and cooling are among the top energy expenses for households. 
 
+## 3.1 Heat pump
 ```{r}
 #Electricity costs for space heating (“DOLELSPH” variable),
 
@@ -339,6 +354,9 @@ central_air_df %>%
 
 See above is a bar plot of Heat pump status as binary counts based on household income brakets. Based on ocular scrutiny, higher income brackets report larger ratios of having heatpumps. The $20k - $39k income bracket have the highest counts of not having heatpumps, and having heat pumps. The $40k - $59k; $140k to more income brackets have high ratios of having heat pumps. 
 
+
+
+## 3.2 Income
 ```{r}
 
 #BOXPLOT of income and yearly energy costs----
@@ -377,6 +395,7 @@ xkabledply(anovaInc, title = "ANOVA result summary")
 
 ```
 
+## 3.3 Urban Density and Division
 ```{r}
 #Spatial Prep------
 
@@ -503,10 +522,22 @@ ggplot(Tot_Energy_area_df, aes(x=Division,
    theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
         axis.text.y=element_text())
 
+
 ```
 
 This shows an ANOVA table comparing different regressions of the dependent Y variable, total electricity expenditures, respectively on Division, and Climate type. Overall, it is observed significance at the 5% level for climates that are Hot and Humid, mixed-humid, and hot-dry/mixed dry. This is also shown in our prior graph which shows these climate categories have overall higher averages for total energy costs. It is also observed that the divisions West South Cental, New England, Middle Atlantic, and East South central are significant at the 5% level. This means that these regions have higher total expenditures on heating or cooling, or both. This is also supported visually on our graphs where these divisions report higher averages for total electricity expenditures. 
 
+
+## 3.4 Climate
+
+
+
+
+
+
+
+# 4 Regression
+## 4.1 Heat pump
 ```{r}
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
@@ -581,6 +612,8 @@ autoplot(fit, colour = 'blue')
 
 To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump  decreases total energy expenditures by 1.4% of electricity costs per 1 square footage. 
 
+
+## 4.2 Income, Urban Density
 ```{r}
 #REGRESSION Regression of electricity costs controlling for income, urban area type -----
 
@@ -604,7 +637,7 @@ lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Divi
 xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
 xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
 xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
-xkabledply(lm.DivCli.interaction)
+#xkabledply(lm.DivCli.interaction)
 
 anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
 #ANOVA test (which Regression is best) ----
@@ -651,14 +684,31 @@ xkabledply(anovaRes, title = "ANOVA comparison between the models")
 ANOVA regression of Income related to Urban Density. The last row has the regression with the lowest F-test, and lowest sum of squares error so among the three, so it is the preferred regression.
 
 
+## 4.3 Climate
+
+
+
+
+
+
+
+## 4.4 Stepwise Regression
 ```{r}
 #STEPWISE Regression (Full Model)
-#REGRESSION TREE----
 
 # renaming columns for the formula
 names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
 
-#tree regressions
+fullmodel <- lm(Yearly_Electricity_Costs~Income + Urban_Density+ Division + Climate +Total_Rooms +SqFoot + Urban_Density* Division + Division*Climate , data = Tot_Energy_area_df)
+step(fullmodel)
+xkabledply(step(fullmodel), title = paste("Full Model:", format(formula(fullmodel))))
+plot(step(fullmodel))
+fit5<-lm(Yearly_Electricity_Costs~Income +Total_Rooms + SqFoot+ Division*Climate +Urban_Density*Division, data = Tot_Energy_area_df)
+xkabledply(fit5, title = paste("Model:", format(formula(fit5))))
+summary(fit5)
+```
+## 4.5 Tree Regressions
+```{r}
 treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df)
 summary(treefit)
 plot(treefit)
@@ -666,11 +716,11 @@ text(treefit,cex=0.75)
 
 treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df, control = list(maxdepth = 8, cp=0.009) )
 summary(treefitRpart)
-#fancyRpartPlot(treefitRpart, cex=0.9)
+fancyRpartPlot(treefitRpart, cex=0.9)
 
 treefitRpart2 <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df)
 summary(treefitRpart2)
-#fancyRpartPlot(treefitRpart2, cex=0.9)
+fancyRpartPlot(treefitRpart2, cex=0.9)
 
 #Stepwise Regression?
 my.tree = tree(Yearly_Electricity_Costs  ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data=Tot_Energy_area_df)
