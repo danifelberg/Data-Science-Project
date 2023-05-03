@@ -508,28 +508,6 @@ ggplot(Tot_Energy_area_df, aes(x=Division,
 This shows an ANOVA table comparing different regressions of the dependent Y variable, total electricity expenditures, respectively on Division, and Climate type. Overall, it is observed significance at the 5% level for climates that are Hot and Humid, mixed-humid, and hot-dry/mixed dry. This is also shown in our prior graph which shows these climate categories have overall higher averages for total energy costs. It is also observed that the divisions West South Cental, New England, Middle Atlantic, and East South central are significant at the 5% level. This means that these regions have higher total expenditures on heating or cooling, or both. This is also supported visually on our graphs where these divisions report higher averages for total electricity expenditures. 
 
 ```{r}
-
-# Preparing Linear Models for climate and census division
-lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
-lm.Climate <- lm(`Yearly Electricity Costs`~Climate, data = Tot_Energy_area_df)
-lm.Division.Climate <- lm(`Yearly Electricity Costs`~Division+Climate, data = Tot_Energy_area_df)
-lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Division*Climate, data = Tot_Energy_area_df)
-
-# Tables of LM comparisons, and ANOVA of LMs (Elect cost, climate, census division)
-xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
-xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
-xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
-xkabledply(lm.DivCli.interaction)
-
-anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
-#ANOVA test (which Regression is best) ----
-xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
-```
-
-
-
-
-```{r}
 #REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
 
 house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$YEARMADERANGE, RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL, RECS2015$CLIMATE_REGION_PUB, RECS2015$MONEYPY, RECS2015$NHSLDMEM, RECS2015$EDUCATION, RECS2015$DOLLARNG, RECS2015$DOLLARFO, RECS2015$EQUIPM)
@@ -601,9 +579,20 @@ fit <- glmnet::cv.glmnet(X, y)
 autoplot(fit, colour = 'blue')
 ```
 
-To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump  decreases total energy expenditures by \$1.4 per 1 square footage. 
+To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump  decreases total energy expenditures by 1.4% of electricity costs per 1 square footage. 
 
 ```{r}
+#REGRESSION Regression of electricity costs controlling for income, urban area type -----
+
+# Adding variables from RECS
+
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
+
+Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
+Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
+Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
 
 # Preparing Linear Models for climate and census division
 lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
@@ -626,18 +615,6 @@ ANOVA regression of Yearly Electricity Costs related to Climate and Division.
 
 
 ```{r}
-#REGRESSION Regression of electricity costs controlling for income, urban area type -----
-
-# Adding variables from RECS
-
-Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
-colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
-Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
-
-Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
-Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
-Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
-
 ## Linear Models for Income, Urban Density, and Division---
 
 fit1 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`, data =Tot_Energy_area_df)
@@ -719,4 +696,4 @@ predicted_values <- predict(treefitRpart2, Tot_Energy_area_df, type = "vector")
 abs_diff <- abs(Tot_Energy_area_df$Yearly_Electricity_Costs - predicted_values)
 ```
 
-Regression Tree of Yearly Electricity costs and influencing factors like Income, Urban Density, Diviison and Climate.
+Regression Tree of Yearly Electricity costs and influencing factors like Income, Urban Density, Division and Climate. This is helpful for determining predictive factors for the variables. 
