@@ -43,6 +43,9 @@ library(Metrics)
 library(boot)
 library(ggfortify)
 library(cowplot)
+#install.packages("ISLR", "tree", "rpart", "rpart.plot")
+library(tree, rpart, rpart.plot)
+
 ```
 
 

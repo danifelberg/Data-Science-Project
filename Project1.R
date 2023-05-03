@@ -483,8 +483,8 @@ heatpump2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot` + `Heat Pump` + `Heat Pu
 house_size <- subset(house_size, (`Heating Cost`) != 0, drop = FALSE)
 house_size$`Heating Cost` <- as.numeric(house_size$`Heating Cost`)
 
-heatpump3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot` + `Heat Pump`:`Log SqFoot`+ `Heat Pump` + 
-                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs`, data = house_size)
+heatpump3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot` + `Heat Pump`:`Log SqFoot`+ `Heat Pump` + `AC Cost` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
 
 heatpump4 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+  `Heat Pump`:`Log SqFoot`+ `Heat Pump` + 
                   `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
