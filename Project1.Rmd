@@ -744,3 +744,9 @@ abs_diff <- abs(Tot_Energy_area_df$Yearly_Electricity_Costs - predicted_values)
 Regression Tree of Yearly Electricity costs and influencing factors like Income, Urban Density, Division and Climate. This is helpful for determining predictive factors for the variables. The variables had effects. Square Foot, Total room numbers, Income had positive impacts. People who live in urban have less electricity cost than live in rural.
 
 Additionally Income, Urban Density, Total Rooms, Area, and Climate variables have a significant, positive impact on electricity costs. The Division variable had a mild impact compared to other factors that were observed, which makes sense since the boundaries are administrative and not based on climate regions directly.
+
+# 5 Conclusion
+
+
+
+# Reference
