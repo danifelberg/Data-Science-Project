@@ -44,7 +44,7 @@ library(boot)
 library(ggfortify)
 library(cowplot)
 #install.packages("ISLR", "tree", "rpart", "rpart.plot")
-library(tree, rpart, rpart.plot)
+library(tree, rpart)
 
 ```
 
@@ -611,7 +611,7 @@ anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.
 xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
 
 ```
-ANOVA regression of Yearly Electricity Costs related to Climate and Division.
+ANOVA regression of Yearly Electricity Costs related to Climate and Division. The last row has the regression with the lowest F-test, and lowest sum of squares error so among the four, so it is the preferred regression.
 
 
 ```{r}
@@ -627,6 +627,7 @@ xkablevif(fit2)
 xkablevif(fit3)
 
 ## Plot for fitted model
+par(mfrow=c(2,2))
 plot(fit1)
 plot(fit2)
 plot(fit3)
@@ -647,18 +648,12 @@ xkabledply(anovaRes, title = "ANOVA comparison between the models")
 
 ```
 
-
-ANOVA regression of Income related to Urban Density.
+ANOVA regression of Income related to Urban Density. The last row has the regression with the lowest F-test, and lowest sum of squares error so among the three, so it is the preferred regression.
 
 
 ```{r}
 #STEPWISE Regression (Full Model)
 #REGRESSION TREE----
-
-loadPkg("ISLR")
-loadPkg("tree")
-loadPkg("rpart")
-loadPkg("rpart.plot")
 
 # renaming columns for the formula
 names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
