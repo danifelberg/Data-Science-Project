@@ -67,21 +67,21 @@ options(scientific=T, digits = 3)
 
 This study examines the impact of household energy expenditure reported during the year 2015 from data collected by the Energy Information Administration. With that information, we can then conduct Exploratory Data Analysis (EDA) related to yearly household energy consumption, the expenditures of energy related to climate region, census income levels, and appliance types. In addition, the EDA will then allow us to perform more complex predictive models, including linear regression, ridge regression, a regression tree, and others. The dataset for this project is from the 2015 Residential Energy Consumption Survey (RECS) conducted by the U.S. Energy Information Administration (EIA), also known as the branch of the U.S. Department of Energy responsible for collecting data specifically related to energy. This is the 14th edition of this national household survey, which is periodically carried out every five years or so (though this has varied over the years), the first of which was collected back in 1978.
 
-For this analysis, the year 2015 was used as we believed it to be the best option that wouldn\'t present a significant amount of outliers, compared to other years. For instance, while we could have used the 2020 RECS survey, as it was the most recent, it was also collected at the height of the COVID-19 pandemic. As a result, while working on our proposal, our preliminary research indicated that 2020 may have been an anomaly, particularly when it came to energy consumption. As the EIA themselves point out, \"Despite many people spending more time in their homes during 2020 in response to the COVID-19 pandemic, U.S. energy consumption in the residential sector fell 4% between 2019 and 2020.\" Additionally, we decided not to use the 2009 RECS, despite it having more observations, due to its proximity to the 2008 financial crisis, another factor we feared might influence the data. Most importantly, however, the 2015 RECS was much more recent, and therefore relevant, and more reliable.
+For this analysis, the year 2015 was used as we believed it to be the best option that wouldn't present a significant amount of outliers, compared to other years. For instance, while we could have used the 2020 RECS survey, as it was the most recent, it was also collected at the height of the COVID-19 pandemic. As a result, while working on our proposal, our preliminary research indicated that 2020 may have been an anomaly, particularly when it came to energy consumption. As the EIA themselves point out, "Despite many people spending more time in their homes during 2020 in response to the COVID-19 pandemic, U.S. energy consumption in the residential sector fell 4% between 2019 and 2020." Additionally, we decided not to use the 2009 RECS, despite it having more observations, due to its proximity to the 2008 financial crisis, another factor we feared might influence the data. Most importantly, however, the 2015 RECS was much more recent, and therefore relevant, and more reliable.
 
 ## 1.1 Background Information and Definitions
 
 As we sought to familiarize ourselves with the topic, some general research was needed so we could better understand the information presented to us in the data. In doing so, it became clear that some basic knowledge regarding energy consumption, with relation to appliances and environment, should be explained in order to proceed with the analysis.
 
-This involves, firstly, establishing how a heat pump works, and why it\'s relevant to our study. Heat pumps, as defined by the U.S. Department of Energy, are an \"energy-efficient alternative to furnaces and air conditioners for all climates [that] use electricity to transfer heat from a cool space to a warm space, making the cool space cooler and the warm space warmer.\" As a result, since they only transfer heat, rather than actually heating or cooling an environment, they are seen as a more efficient appliance to use when it comes to controlling a given household\'s temperature. While there are different types of heat pumps, they generally do not consume a lot of electricity, meaning they cost less, and have a considerably smaller carbon footprint as well. That being said, it\'s also important to note that the installation and purchase of heat pumps can be more expensive than traditional AC systems, but nevertheless, you would still save more overtime (the U.S. DoE estimates that by switching to a heat pump, you might be able to lower their energy usage by around 50%). In our analysis, we will look to determine if these promises of lower energy consumption, and consequently, lower costs, hold their ground.
+This involves, firstly, establishing how a heat pump works, and why it's relevant to our study. Heat pumps, as defined by the U.S. Department of Energy, are an "energy-efficient alternative to furnaces and air conditioners for all climates [that] use electricity to transfer heat from a cool space to a warm space, making the cool space cooler and the warm space warmer." As a result, since they only transfer heat, rather than actually heating or cooling an environment, they are seen as a more efficient appliance to use when it comes to controlling a given household's temperature. While there are different types of heat pumps, they generally do not consume a lot of electricity, meaning they cost less, and have a considerably smaller carbon footprint as well. That being said, it's also important to note that the installation and purchase of heat pumps can be more expensive than traditional AC systems, but nevertheless, you would still save more overtime (the U.S. DoE estimates that by switching to a heat pump, you might be able to lower their energy usage by around 50%). In our analysis, we will look to determine if these promises of lower energy consumption, and consequently, lower costs, hold their ground.
 
-Secondly, we thought that an interesting relationship to analyze throughout this process is to what extent climate and geography might have an effect on energy bills. For this, it was necessary to first understand what the existing literature has written on the topic. To that end, a working paper published by the International Monetary Fund (IMF) found that \"there is a U-shaped relationship between electricity consumption and temperature [...] and the impact of temperature on electricity consumption is persistent,\" (Yao 29). This implies then that there are no particular climates types, necessarily, that increase the demand for energy, but rather, extreme temperatures overall (very hot/very cold). In addition to that, another working paper, published by the Energy Policy Research Group, in collaboration with the University of Cambridge, observed that \"in general although temperature has robust and relatively flat effects on electricity demand [...], rain and sunshine duration show greater potential to affect individual behaviour and daily routines,\" (Kang and Reiner 10). This interpretation differs from the previous one, in that it argues humidity plays a role as well, along with climate. This then gives us an idea that there may be an observable relationship in our dataset, which will be tested.
+Secondly, we thought that an interesting relationship to analyze throughout this process is to what extent climate and geography might have an effect on energy bills. For this, it was necessary to first understand what the existing literature has written on the topic. To that end, a working paper published by the International Monetary Fund (IMF) found that "there is a U-shaped relationship between electricity consumption and temperature [...] and the impact of temperature on electricity consumption is persistent," (Yao 29). This implies then that there are no particular climates types, necessarily, that increase the demand for energy, but rather, extreme temperatures overall (very hot/very cold). In addition to that, another working paper, published by the Energy Policy Research Group, in collaboration with the University of Cambridge, observed that "in general although temperature has robust and relatively flat effects on electricity demand [...], rain and sunshine duration show greater potential to affect individual behaviour and daily routines," (Kang and Reiner 10). This interpretation differs from the previous one, in that it argues humidity plays a role as well, along with climate. This then gives us an idea that there may be an observable relationship in our dataset, which will be tested.
 
-Due to the nature of the data that we are working with, it is important that we also establish some definitions for the terms we will be using throughout this paper. One key term, for instance, is the term \"household\", which the EIA defines as \"all people who occupy a particular housing unit as their usual residence or who live there at the time of the interview and have no usual residence elsewhere.\" This is slightly different from the term \"housing unit\", which as defined by the EIA as well, consists of \"a house, apartment, group of rooms, or single room if it is either occupied or intended for occupancy as separate living quarters by a family, an individual, or a group of unrelated persons.\" That is to say then, that per the EIA, a \"household\" are the individuals within the \"housing unit\". However, for the sake of simplicity, and to not get lost in semantics, throughout the entirety of this paper, the term \"household\" will refer to both the \"housing unit\" as well as those who reside within it.
+Due to the nature of the data that we are working with, it is important that we also establish some definitions for the terms we will be using throughout this paper. One key term, for instance, is the term "household", which the EIA defines as "all people who occupy a particular housing unit as their usual residence or who live there at the time of the interview and have no usual residence elsewhere." This is slightly different from the term "housing unit", which as defined by the EIA as well, consists of "a house, apartment, group of rooms, or single room if it is either occupied or intended for occupancy as separate living quarters by a family, an individual, or a group of unrelated persons." That is to say then, that per the EIA, a "household" are the individuals within the "housing unit". However, for the sake of simplicity, and to not get lost in semantics, throughout the entirety of this paper, the term "household" will refer to both the "housing unit" as well as those who reside within it.
 
 # 2 The Dataset (\`RECS2015\`)
 
-The dataset used was a sample of 5,686 households out of a total of 118.2 million that were surveyed. These were randomly selected by the EIA itself, using \"a complex, multistage, area-probability sample design\". This, in turn, gives us some assurance that skewness in the data may be minimized, due to the random sampling that was done.\
+The dataset used was a sample of 5,686 households out of a total of 118.2 million that were surveyed. These were randomly selected by the EIA itself, using "a complex, multistage, area-probability sample design". This, in turn, gives us some assurance that skewness in the data may be minimized, due to the random sampling that was done.\
 The data itself has 759 variables, consisting of both quantitative and qualitative variables. Throughout our analysis we used the following variables:
 
 -   `MONEYPY`: This is an ordinal variable measuring annual gross household income earned over the year preceding the survey period. It has a total of 8 categories, in order from smallest to largest:
@@ -134,15 +134,15 @@ The data itself has 759 variables, consisting of both quantitative and qualitati
 
 -   `REGIONC`: This is a nominal variable listing the U.S. Census regions where the household is located. It has 4 categories, in the following order:
 
-    -   1: `Northeast` (\"New England\" and \"Middle Atlantic\")
+    -   1: `Northeast` ("New England" and "Middle Atlantic")
 
-    -   2: `Midwest` (\"East North Central\" and \"West North Central\")
+    -   2: `Midwest` ("East North Central" and "West North Central")
 
-    -   3: `South` (\"South Atlantic\", \"East South Central\", and \"West South Central\")
+    -   3: `South` ("South Atlantic", "East South Central", and "West South Central")
 
-    -   4: `West` (\"Mountain North\", \"Mountain South\", and \"Pacific\")
+    -   4: `West` ("Mountain North", "Mountain South", and "Pacific")
 
--   `CLIMATE_REGION_PUB`: This is a nominal variable which describes the \"Building America Climate Zone\" in which the household is located. For reference, \"Building America\" is a program created by the U.S. Department of Energy to promote \"innovations in residential building energy efficiency and performance\", among other goals. In order to save the most energy in homes, they have established climate zones that span the United States based on average temperatures and precipitation. In total, it has 5 categories, in no particular order:
+-   `CLIMATE_REGION_PUB`: This is a nominal variable which describes the "Building America Climate Zone" in which the household is located. For reference, "Building America" is a program created by the U.S. Department of Energy to promote "innovations in residential building energy efficiency and performance", among other goals. In order to save the most energy in homes, they have established climate zones that span the United States based on average temperatures and precipitation. In total, it has 5 categories, in no particular order:
 
     -   `Cold/Very Cold`
 
@@ -329,7 +329,7 @@ test %>%
 
 Above we can see a plot of common appliances and their total yearly electricity usage. We can notice that waterheating, spaceheating, and air conditioning are among the top appliances that consume electricity. Consequently, we see that central air costs for heating and cooling are among the top energy expenses for households. Kindly note as well that outliers were removed from the data.
 
-Now that we\'ve established these differences in appliance cost, and the most costly of those, we can further examine the role that space heating, and heat pumps in particular, play in terms of determining yearly space heating costs.
+Now that we've established these differences in appliance cost, and the most costly of those, we can further examine the role that space heating, and heat pumps in particular, play in terms of determining yearly space heating costs.
 
 ## 3.1 Heat pump
 
@@ -722,18 +722,133 @@ ggplot(Tot_Energy_area_df, aes(x=Division,
         axis.text.y=element_text())
 ```
 
-For reference, you may find a maps below that illustrate how the census divisions are divided, as well as the climate regions.
+For reference, you may find a maps below that illustrate how the census divisions are divided, as well as the main climate regions.
 
 ```{r}
+#Load USA states----
 
+usa <- map_data("usa")
+
+states <- map_data("state")
+
+# census divisions
+
+states <- states %>%
+  mutate(region = as.factor(case_when(region == "connecticut" ~ "New England",
+                                      region == "maine" ~ "New England",
+                                      region == "massachusetts" ~ "New England",
+                                      region == "new hampshire" ~ "New England",
+                                      region == "rhode island" ~ "New England",
+                                      region == "vermont" ~ "New England",
+                                      region == "new jersey" ~ "Middle Atlantic",
+                                      region == "new york" ~ "Middle Atlantic",
+                                      region == "pennsylvania" ~ "Middle Atlantic",
+                                      region == "indiana" ~ "East North Central",
+                                      region == "illinois" ~ "East North Central",
+                                      region == "michigan" ~ "East North Central",
+                                      region == "ohio" ~ "East North Central",
+                                      region == "wisconsin" ~ "East North Central",
+                                      region == "iowa" ~ "West North Central",
+                                      region == "kansas" ~ "West North Central",
+                                      region == "minnesota" ~ "West North Central",
+                                      region == "missouri" ~ "West North Central",
+                                      region == "nebraska" ~ "West North Central",
+                                      region == "north dakota" ~ "West North Central",
+                                      region == "south dakota" ~ "West North Central",
+                                      region == "delaware" ~ "South Atlantic",
+                                      region == "district of columbia" ~ "South Atlantic",
+                                      region == "florida" ~ "South Atlantic",
+                                      region == "georgia" ~ "South Atlantic",
+                                      region == "maryland" ~ "South Atlantic",
+                                      region == "north carolina" ~ "South Atlantic",
+                                      region == "south carolina" ~ "South Atlantic",
+                                      region == "virginia" ~ "South Atlantic",
+                                      region == "west virginia" ~ "South Atlantic",
+                                      region == "alabama" ~ "East South Central",
+                                      region == "kentucky" ~ "East South Central",
+                                      region == "mississippi" ~ "East South Central",
+                                      region == "tennessee" ~ "East South Central",
+                                      region == "arkansas" ~ "West South Central",
+                                      region == "louisiana" ~ "West South Central",
+                                      region == "oklahoma" ~ "West South Central",
+                                      region == "texas" ~ "West South Central",
+                                      region == "arizona" ~ "Mountain South",
+                                      region == "colorado" ~ "Mountain North",
+                                      region == "idaho" ~ "Mountain North",
+                                      region == "new mexico" ~ "Mountain South",
+                                      region == "montana" ~ "Mountain North",
+                                      region == "utah" ~ "Mountain North",
+                                      region == "nevada" ~ "Mountain South",
+                                      region == "wyoming" ~ "Mountain North",
+                                      region == "alaska" ~ "Pacific",
+                                      region == "california" ~ "Pacific",
+                                      region == "hawaii" ~ "Pacific",
+                                      region == "oregon" ~ "Pacific",
+                                      region == "washington" ~ "Pacific",)))
+
+#PLOT the US Census Divisions------
+divisions_map <- ggplot(data = states) + 
+  geom_polygon(aes(x = long, 
+                   y = lat, 
+                   fill = region, 
+                   group = group), 
+               color = "white") + 
+  coord_fixed(1.3)
+
+ditch_the_axes <- theme(
+  axis.text = element_blank(),
+  axis.line = element_blank(),
+  axis.ticks = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.title = element_blank()
+)
+
+divisions_map + ditch_the_axes
+
+knitr::include_graphics("BA_Climate_Zones.png")
 ```
+
+To confirm the differences that we are seeing in the stacked bar plot above, we can perform an ANOVA test, followed by post-hoc testing.
+
+```{r}
+anovaDiv = aov(`Yearly Electricity Costs` ~ Division, data = Tot_Energy_area_df)
+xkabledply(anovaDiv, title = "ANOVA result summary")
+
+Div_Tukeyaov <- TukeyHSD(anovaDiv)
+Div_Tukeyaov
+```
+
+The ANOVA test, followed by Tukey's HSD test, confirms what we can observe above, where some categories pairwise do in fact have different means, but others appear to have very similar ones. With that, we can interpret that, to an extent, it's likely that geography, as well as climate are potentially impacting the yearly electricity expenditure for U.S. households. As a result, humidity may be a bigger indicator of energy consumption, and consequently, average yearly expenditure. In the modelling section, we will observe the extent to which both census division and climate influence electricity costs.
+
+## 3.5 EDA Results
+
+Given how wide the scope of this analysis was, we should now remind ourselves of the four research questions that were proposed at the start, and determine if we have answered each of them.
+
+1.  **Are heat pumps more common in certain income brackets?**
+
+Based on the plots and significance tests, income brackets and heat pump status are correlated at the 95% confidence interval, meaning we can reject the null hypothesis, in favor of the alternative. Therefore, yes there is a relationship between heat pumps and income brackets.
+
+2.  **Do income brackets have different household electricity costs?**
+
+The boxplot, along with ANOVA and post-hoc testing, allowed us to see that it may be possible to infer that there is a positive correlation between household income and annual household electricity expenditure, though this will be more carefully observed in the modelling section below.
+
+3.  **Is urban density an impactful variable on household electricity costs?**
+
+Using the plot, along with significance testing, we were able to find that urban density is an impactful variable on household electricity costs, insofar as the household is considered to be rural. That being said, we will confirm this pattern through modelling.
+
+4.  **Do climate and geography have an impact on household electricity costs?**
+
+For both climate, as well as census divisions, the ANOVA tests we ran confirmed that the means were not similar to each other, meaning we reject the null in favor of the alternative, to say that both variables have an impact on household electricity costs. But with that, the tukey ad-hoc that we ran helped potentially explain how exactly both variables combine to have an effect on household energy costs. Using modelling, we will see exactly if one variable might be playing more of a role than the other.
 
 # 4 Modelling
 
 ## 4.1 Heat pump
 
+To begin answering the first question, we will first produce some linear models, and compare each one.
+
 ```{r}
-#REGRESSION - WORK IN PROGRESS PROJECT 2: What are the HP yearly energy costs -----
+#REGRESSION - PROJECT 2: What are the HP yearly energy costs -----
 
 house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$YEARMADERANGE, RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL, RECS2015$CLIMATE_REGION_PUB, RECS2015$MONEYPY, RECS2015$NHSLDMEM, RECS2015$EDUCATION, RECS2015$DOLLARNG, RECS2015$DOLLARFO, RECS2015$EQUIPM)
 
@@ -767,7 +882,7 @@ xkabledply(anova(heatpump1, heatpump2, heatpump3, heatpump4))
 
 ```
 
-See above is an ANOVA table of four different regressions of the change in total energy per squarefootage and heat pump status, while adding controlling for house and household demographic factors. Some sociological controls are income, education since different incomes and educational levels have different yearly electricity costs. Housing and fuel types are controlled in square footage, climate region, and main heating fuel type to isolate the effects of heat pumps.
+Above we can see an ANOVA table of four different regressions of the change in total energy per squarefootage and heat pump status, while adding controlling for house and household demographic factors. Some sociological controls are income, education since different incomes and educational levels have different yearly electricity costs. Housing and fuel types are controlled in square footage, climate region, and main heating fuel type to isolate the effects of heat pumps.
 
 ```{r}
 
