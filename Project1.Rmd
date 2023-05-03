@@ -79,7 +79,7 @@ Secondly, we thought that an interesting relationship to analyze throughout this
 
 Due to the nature of the data that we are working with, it is important that we also establish some definitions for the terms we will be using throughout this paper. One key term, for instance, is the term "household", which the EIA defines as "all people who occupy a particular housing unit as their usual residence or who live there at the time of the interview and have no usual residence elsewhere." This is slightly different from the term "housing unit", which as defined by the EIA as well, consists of "a house, apartment, group of rooms, or single room if it is either occupied or intended for occupancy as separate living quarters by a family, an individual, or a group of unrelated persons." That is to say then, that per the EIA, a "household" are the individuals within the "housing unit". However, for the sake of simplicity, and to not get lost in semantics, throughout the entirety of this paper, the term "household" will refer to both the "housing unit" as well as those who reside within it.
 
-# 2 The Dataset (\`RECS2015\`)
+# 2 The Dataset (`RECS2015`)
 
 The dataset used was a sample of 5,686 households out of a total of 118.2 million that were surveyed. These were randomly selected by the EIA itself, using "a complex, multistage, area-probability sample design". This, in turn, gives us some assurance that skewness in the data may be minimized, due to the random sampling that was done.\
 The data itself has 759 variables, consisting of both quantitative and qualitative variables. Throughout our analysis we used the following variables:
@@ -703,7 +703,7 @@ xkabledply(anovaDiv, title = "ANOVA result summary")
 
 ```
 
-## 3.4 Climate and Division
+## 3.4 Division and Climate
 
 Below we can see a stacked bar plot that looks at the average household electricity cost for each division, while controlling for climate. It allows us to visualize not just what specific divisions are the most impacted by electricity costs, but in addition, what climates contribute the most towards household expenditure.
 
@@ -843,6 +843,11 @@ For both climate, as well as census divisions, the ANOVA tests we ran confirmed 
 
 # 4 Modelling
 
+Having now answered some preliminary research questions through EDA, we now ask more complex questions that we will answer using a variety of models:
+
+1.  **What factors impact the electricity costs related to heat pump implementation?**
+2.  **What factors impact the total electricity costs of a US household, and how strong is that impact?**
+
 ## 4.1 Heat pump
 
 To begin answering the first question, we will first produce some linear models, and compare each one.
@@ -892,7 +897,7 @@ vif(heatpump4)
 
 ```
 
-See above is a result of the best fitted regression (4th, with all controls). It is also observed that there are generally low Variance Inflation Factors (VIFs) in the regression. The main exception is the dummy variable of heat pump status, but this is expected since dummy variables typically have large VIFs. As observed in the residual plots, the residuals are pretty uniform, which loosely matches the actual data. So, it makes it difficult to determine significance for our variables, especially since some variables interact with each other in a system and may be colinear. This is one possible explanation of why heat pump dummy variable does not have statistical significance at the 5% level.
+Above is a result of the best fitted regression (4th, with all controls). It is also observed that there are generally low Variance Inflation Factors (VIFs) in the regression. The main exception is the dummy variable of heat pump status, but this is expected since dummy variables typically have large VIFs. As observed in the residual plots, the residuals are pretty uniform, which loosely matches the actual data. So, it makes it difficult to determine significance for our variables, especially since some variables interact with each other in a system and may be colinear. This is one possible explanation of why heat pump dummy variable does not have statistical significance at the 5% level.
 
 ```{r}
 #Matrix of the predictor variables
@@ -919,42 +924,11 @@ fit <- glmnet::cv.glmnet(X, y)
 autoplot(fit, colour = 'blue')
 ```
 
-To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by \\0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump decreases total energy expenditures by 1.4% of electricity costs per 1 square footage.
+To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by 0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump decreases total energy expenditures by 1.4% of electricity costs per 1 square footage.
 
 ## 4.2 Income, Urban Density
 
-```{r}
-#REGRESSION Regression of electricity costs controlling for income, urban area type -----
-
-# Adding variables from RECS
-
-Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
-colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
-Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
-
-Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
-Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
-Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
-
-# Preparing Linear Models for climate and census division
-lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
-lm.Climate <- lm(`Yearly Electricity Costs`~Climate, data = Tot_Energy_area_df)
-lm.Division.Climate <- lm(`Yearly Electricity Costs`~Division+Climate, data = Tot_Energy_area_df)
-lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Division*Climate, data = Tot_Energy_area_df)
-
-# Tables of LM comparisons, and ANOVA of LMs (Elect cost, climate, census division)
-xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
-xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
-xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
-#xkabledply(lm.DivCli.interaction)
-
-anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
-#ANOVA test (which Regression is best) ----
-xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
-
-```
-
-ANOVA regression of Yearly Electricity Costs related to Climate and Division. The last row has the regression with the lowest F-test, and lowest sum of squares error so among the four, so it is the preferred regression.
+Looking now at our second question, we create some general linear models looking specifically at the influence that income and urban density have on electricity cost.
 
 ```{r}
 ## Linear Models for Income, Urban Density, and Division---
@@ -990,9 +964,44 @@ xkabledply(anovaRes, title = "ANOVA comparison between the models")
 
 ```
 
-ANOVA regression of Income related to Urban Density. The last row has the regression with the lowest F-test, and lowest sum of squares error so among the three, so it is the preferred regression.
+Above we see several models that we have created, and at the very bottom, we have an ANOVA test comparing these different models. The last row has the regression with the lowest F-test, and lowest sum of squares error, meaning that, among the three, it is the preferred regression:
 
-## 4.3 Climate
+**`Yearly Electricity Costs` \~ `Income` + `Urban Density` + `Division` + `Urban Density` \* `Division`**
+
+## 4.3 Division and Climate
+
+```{r}
+#REGRESSION Regression of electricity costs controlling for income, urban area type -----
+
+# Adding variables from RECS
+
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
+
+Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
+Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
+Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
+
+# Preparing Linear Models for climate and census division
+lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
+lm.Climate <- lm(`Yearly Electricity Costs`~Climate, data = Tot_Energy_area_df)
+lm.Division.Climate <- lm(`Yearly Electricity Costs`~Division+Climate, data = Tot_Energy_area_df)
+lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Division*Climate, data = Tot_Energy_area_df)
+
+# Tables of LM comparisons, and ANOVA of LMs (Elect cost, climate, census division)
+xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
+xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
+xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
+#xkabledply(lm.DivCli.interaction)
+
+anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
+#ANOVA test (which Regression is best) ----
+xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
+
+```
+
+ANOVA regression of Yearly Electricity Costs related to Climate and Division. The last row has the regression with the lowest F-test, and lowest sum of squares error so among the four, so it is the preferred regression.
 
 ## 4.4 Stepwise Regression
 
@@ -1052,4 +1061,16 @@ Additionally Income, Urban Density, Total Rooms, Area, and Climate variables hav
 
 # 5 Conclusion
 
-# Reference
+# References
+
+*Despite more people staying at home, U.S. residential energy use fell 4% in 2020*. Homepage - U.S. Energy Information Administration (EIA). (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/todayinenergy/detail.php?id=47976>
+
+*Heat Pump Systems*. Energy.gov. (n.d.). Retrieved March 22, 2023, from <https://www.energy.gov/energysaver/heat-pump-systems>
+
+Kang, J., & Reiner, D. M. (2022, April 29). *What is the effect of weather on household electricity consumption? Empirical evidence from Ireland*. ScienceDirect. Retrieved March 22, 2023, from <https://www.sciencedirect.com/science/article/pii/S014098832200189X>
+
+*RECS Terminology*. EIA. (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/consumption/residential/terminology.php#h>
+
+*U.S. Energy Information Administration - EIA - independent statistics and analysis*. EIA. (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/consumption/residential/data/2015/index.php?view=microdata>
+
+Yao, J. (2021, February 5). *Electricity consumption and temperature: Evidence from Satellite Data*. IMF. Retrieved March 22, 2023, from <https://www.imf.org/en/Publications/WP/Issues/2021/02/05/Electricity-Consumption-and-Temperature-Evidence-from-Satellite-Data-50031>
