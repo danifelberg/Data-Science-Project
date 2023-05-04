@@ -926,9 +926,9 @@ autoplot(fit, colour = 'blue')
 
 To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by 0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump decreases total energy expenditures by 1.4% of electricity costs per 1 square footage.
 
-## 4.2 Income, Urban Density
+## 4.2 Income, Urban Density, and Division
 
-Looking now at our second question, we create some general linear models looking specifically at the influence that income and urban density have on electricity cost.
+Looking now at our second question, we create some general linear models looking specifically at the influence that income, urban density, and census division have on electricity cost.
 
 ```{r}
 ## Linear Models for Income, Urban Density, and Division---
@@ -964,11 +964,15 @@ xkabledply(anovaRes, title = "ANOVA comparison between the models")
 
 ```
 
-Above we see several models that we have created, and at the very bottom, we have an ANOVA test comparing these different models. The last row has the regression with the lowest F-test, and lowest sum of squares error, meaning that, among the three, it is the preferred regression:
+Above we see several models that we have created, and at the very bottom, we have an ANOVA test comparing these different models. The last row has the regression with the lowest F-score, and lowest sum of squares error, meaning that, among the three, it is the preferred regression:
 
 **`Yearly Electricity Costs` \~ `Income` + `Urban Density` + `Division` + `Urban Density` \* `Division`**
 
+Looking at the coefficient values of the model, we can observe that income has a positive impact on electricity costs, and in addition, households located in urban areas appear to have lower electricity costs than those in rural areas (when taking census divisions into account), contradicting what we observed in the EDA portion of this analysis. That being said, most of the interaction terms have a p-value greater than 0.05, meaning we cannot consider them to be statistically significant. Along with that, when looking at urban density alone, rural areas still appear to have much lower electricity costs than urban and urban cluster areas.
+
 ## 4.3 Division and Climate
+
+Continuing with our second question, we now consider census division and climate by themselves, and generate some linear models.
 
 ```{r}
 #REGRESSION Regression of electricity costs controlling for income, urban area type -----
@@ -993,7 +997,7 @@ lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Divi
 xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
 xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
 xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
-#xkabledply(lm.DivCli.interaction)
+xkabledply(lm.DivCli.interaction)
 
 anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
 #ANOVA test (which Regression is best) ----
@@ -1001,9 +1005,17 @@ xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
 
 ```
 
-ANOVA regression of Yearly Electricity Costs related to Climate and Division. The last row has the regression with the lowest F-test, and lowest sum of squares error so among the four, so it is the preferred regression.
+The ANOVA comparison of Yearly Electricity Costs related to Climate and Division illustrate that the last row has the regression with the lowest F-score, and lowest sum of squares error, meaning that among the four, it is the preferred regression:
+
+**`Yearly Electricity Costs`\~`Division` + `Climate` + `Division`\*`Climate`**
+
+Interestingly, we can observe that humidity alone, without accounting for census divisions, appears to be impacting household electricity cost much more than the coefficients that contain interaction terms. Combining this with what we observed in the EDA portion, it may be the case that climate is impacting the cost much more than census division.
 
 ## 4.4 Stepwise Regression
+
+Having a clearer idea of how some variables are specifically impacting household electricity costs, we now create a stepwise regression using a full model, that takes all variables we looked at so far:
+
+**`Yearly_Electricity_Costs`\~`Income` + `Urban_Density`+ `Division` + `Climate` + `Total_Rooms` + `SqFoot` + `Urban_Density` \* `Division` + `Division` \* `Climate`**
 
 ```{r}
 #STEPWISE Regression (Full Model)
@@ -1015,12 +1027,17 @@ fullmodel <- lm(Yearly_Electricity_Costs~Income + Urban_Density+ Division + Clim
 step(fullmodel)
 xkabledply(step(fullmodel))
 plot(step(fullmodel))
+
 fit5<-lm(Yearly_Electricity_Costs~Income +Total_Rooms + SqFoot+ Division*Climate +Urban_Density*Division, data = Tot_Energy_area_df)
 xkabledply(fit5)
 summary(fit5)
 ```
 
-## 4.5 Tree Regressions
+With this more complete model, we confirm some patterns that we have observed so far. We see that income (generally), total number of rooms, and square footage have a positive correlation with electricity cost. Moreover, we once again notice that, when looking at urban density by itself (as many of the interaction terms are not significant), households in rural areas have higher electricity costs than those in urban and urban cluster areas. With that, humid climates also appear to have much higher electricity costs.
+
+## 4.5 Regression Tree
+
+To fully understand all the potential relationships of the variables on household energy expenditure, we created a regression tree that allows us to potentially predict how much a given household would spend on electricity. That being said, a regression tree by itself will not necessarily have accurate predictions, as they have a high variance. However, it still allows us to observe which variables have the most significant impact on electricity costs.
 
 ```{r}
 treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df)
@@ -1028,15 +1045,11 @@ summary(treefit)
 plot(treefit)
 text(treefit,cex=0.75)
 
-treefitRpart <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df, control = list(maxdepth = 8, cp=0.009) )
-summary(treefitRpart)
-fancyRpartPlot(treefitRpart, cex=0.9)
-
 treefitRpart2 <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df)
 summary(treefitRpart2)
-fancyRpartPlot(treefitRpart2, cex=0.9)
+fancyRpartPlot(treefitRpart2, cex=0.75)
 
-#Stepwise Regression?
+#Deviance
 my.tree = tree(Yearly_Electricity_Costs  ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data=Tot_Energy_area_df)
 prune.tree(my.tree,best=5)
 my.tree.seq = prune.tree(my.tree)
@@ -1055,11 +1068,17 @@ predicted_values <- predict(treefitRpart2, Tot_Energy_area_df, type = "vector")
 abs_diff <- abs(Tot_Energy_area_df$Yearly_Electricity_Costs - predicted_values)
 ```
 
-Regression Tree of Yearly Electricity costs and influencing factors like Income, Urban Density, Division and Climate. This is helpful for determining predictive factors for the variables. The variables had effects. Square Foot, Total room numbers, Income had positive impacts. People who live in urban have less electricity cost than live in rural.
-
-Additionally Income, Urban Density, Total Rooms, Area, and Climate variables have a significant, positive impact on electricity costs. The Division variable had a mild impact compared to other factors that were observed, which makes sense since the boundaries are administrative and not based on climate regions directly.
+The regression tree shows yearly electricity costs being influenced by factors like total rooms, climate, square footage, and income. This is helpful for determining predictive factors for the variables. As we can see, households with more rooms, greater square footage, that resided in either extreme or humid climates, and had a higher income, tend to spend more on electricity, annually. Notably, division does not appear to have an impact, per the regression tree, showcasing once more that climate may influence energy costs much more than census division.
 
 # 5 Conclusion
+
+With the models that we created above, we now look back at the additional research questions we proposed in order to answer them.
+
+1.  **What factors impact the electricity costs related to heat pump implementation?**
+
+Based on
+
+1.  **What factors impact the total electricity costs of a US household, and how strong is that impact?**
 
 # References
 
