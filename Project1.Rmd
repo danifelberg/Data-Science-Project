@@ -931,6 +931,18 @@ To account for colinearity, a ridge regression is used to better estimate the va
 Looking now at our second question, we create some general linear models looking specifically at the influence that income, urban density, and census division have on electricity cost.
 
 ```{r}
+#REGRESSION Regression of electricity costs controlling for income, urban area type -----
+
+# Adding variables from RECS
+
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
+
+Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
+Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
+Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
+
 ## Linear Models for Income, Urban Density, and Division---
 
 fit1 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`, data =Tot_Energy_area_df)
@@ -975,17 +987,6 @@ Looking at the coefficient values of the model, we can observe that income has a
 Continuing with our second question, we now consider census division and climate by themselves, and generate some linear models.
 
 ```{r}
-#REGRESSION Regression of electricity costs controlling for income, urban area type -----
-
-# Adding variables from RECS
-
-Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
-colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
-Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
-
-Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
-Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
-Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
 
 # Preparing Linear Models for climate and census division
 lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
@@ -1057,18 +1058,11 @@ plot(my.tree.seq)
 
 deviance1 <- my.tree.seq$dev
 deviance1
-
-# Testing tree regression --> Not working?
-
-predictions <- predict(treefitRpart2)
-mse_values <- summary(treefitRpart2)$MSE
-rmse <- sqrt(mean(mse_values))
-
-predicted_values <- predict(treefitRpart2, Tot_Energy_area_df, type = "vector")
-abs_diff <- abs(Tot_Energy_area_df$Yearly_Electricity_Costs - predicted_values)
 ```
 
 The regression tree shows yearly electricity costs being influenced by factors like total rooms, climate, square footage, and income. This is helpful for determining predictive factors for the variables. As we can see, households with more rooms, greater square footage, that resided in either extreme or humid climates, and had a higher income, tend to spend more on electricity, annually. Notably, division does not appear to have an impact, per the regression tree, showcasing once more that climate may influence energy costs much more than census division.
+
+A plot showing the size vs. deviance was also created to show that the regression tree has a very low error. This would be concerning if we were looking to predict a specific cost based on the variables (i.e. overfitting), but since we are only looking at their importance, the tree will do just fine.
 
 # 5 Conclusion
 
@@ -1076,9 +1070,11 @@ With the models that we created above, we now look back at the additional resear
 
 1.  **What factors impact the electricity costs related to heat pump implementation?**
 
-Based on
+Based on the linear models, along with ridge regression, we found that heat pumps have decrease total energy expenditures by 1.4% of electricity costs per 1 square footage. This is observed when controlling for environmental and housing attributes, as well as fuel types.
 
 1.  **What factors impact the total electricity costs of a US household, and how strong is that impact?**
+
+Using the various linear models we created, along with the stepwise regression, we see that income, urban density, total rooms, area, and climate have a significant impact on electricity costs. At the same time, we also observed that division only has a mild impact compared to the other factors that were analyzed. One potential reason that this may be the case could be due to the fact that, certain census divisions are mostly made up by a single climate. Consequently, it is not so much that division is increasing household energy costs, but rather, the climate that is present in that division is mainly responsible for the increase.
 
 # References
 
