@@ -501,8 +501,6 @@ has_hp <- central_air_df %>%
 no_hp <- central_air_df %>%
   filter(`Heat Pump Status` == "No Heat Pump")
 
-central_air_df <- outlierKD2(central_air_df, TotElectricity, rm= TRUE)
-
 central_air_df %>%
   arrange(`Heat Pump Status`) %>%
   mutate(Income = factor(Income, levels = c("Less than $20,000",
@@ -524,7 +522,7 @@ central_air_df %>%
 
 ```
 
-After removing outliers above, we can see a bar plot of heat pump status as binary counts based on household income brackets. Based on ocular scrutiny, higher income brackets report larger ratios of having heatpumps. The \$20k - \$39k income bracket have the highest counts of not having heatpumps, and having heat pumps. The \$40k - \$59k; \$140k to more income brackets have high ratios of having heat pumps.
+We can see a bar plot of heat pump status as binary counts based on household income brackets. Based on ocular scrutiny, higher income brackets report larger ratios of having heatpumps. The \$20k - \$39k income bracket have the highest counts of not having heatpumps, and having heat pumps. The \$40k - \$59k; \$140k to more income brackets have high ratios of having heat pumps.
 
 ```{r}
 
@@ -546,6 +544,7 @@ The chi-squared test above indicates that income brackets and heat pump status a
 #BOXPLOT of income and yearly energy costs----
 central_air_df["TotElectricity"] <- RECS2015$DOLLAREL
 
+central_air_df <- outlierKD2(central_air_df, TotElectricity, rm= TRUE)
 
 #PLOT income by total electricity usage-----
 central_air_df %>%
@@ -569,7 +568,7 @@ central_air_df %>%
         axis.text.y=element_text())
 ```
 
-We can see the boxplot above of income brackets and total yearly electricity costs. On averge, lower incomes tend to spend less on electricity costs, compared to higher incomes. This is also supported in literature about energy poverty and cultural practices to save energy.
+After removing outliers, we can see the boxplot above of income brackets and total yearly electricity costs. On averge, lower incomes tend to spend less on electricity costs, compared to higher incomes. This is also supported in literature about energy poverty and cultural practices to save energy.
 
 Below is an ANOVA table of the total electricity related to Income. Since we observe that households with different income levels will have different electricity costs, we then performed a post-hoc test to see which categories are different.
 
