@@ -1,0 +1,1091 @@
+---
+title: "Project 2 - Household Energy Expenditures - Electricity"
+author: "Sean Franco, Mei Fei Hung, Daniel Felberg"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r init, include=F}
+#setwd() Meng Fei's WD  
+#setwd("C:/Users/18045/Documents/R/Data_Intro_Class/Project1")# Sean's WD
+#setwd("C:/Users/danif/OneDrive/Documents/GWU - Data Science (Spring 2023)/DATS 6101/Project/Project1.R") Daniel's WD
+library(readr)
+library(ggplot2)
+#install.packages("survey","ggmap","maps","mapdata","formattable", "forcats", "RColorBrewer","gridExtra", "usmap", "xtable", "glmnet", "boot", Metrics","ggfortify","cowplots","rattle", "fancyRpartPlot")
+library(survey)
+library(dplyr)
+library(ggmap)
+library(maps)
+library(mapdata)
+library(usmap)
+library(formattable)
+library(forcats)
+library(RColorBrewer)
+library(ezids)
+library(readxl)
+library(gridExtra)
+library(lattice)
+library(corrplot)
+library(reshape2)
+library(xtable)
+library(car)
+library(glmnet)
+library(Metrics)
+library(boot)
+library(ggfortify)
+library(cowplot)
+loadPkg("rpart")
+loadPkg("caret")
+loadPkg("rpart.plot")
+loadPkg("rattle")
+loadPkg("ISLR")
+loadPkg("tree") 
+# install.packages("tree", "rpart", "rpart.plot", "ISLR")
+#library(tree, rpart, rpart.plot)
+
+```
+
+```{r setup, include=FALSE}
+# Some of common RMD options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+knitr::opts_chunk$set(warning = F, message = F)
+# Can globally set option for number display format.
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+```
+
+# 1 Introduction
+
+This study examines the impact of household energy expenditure reported during the year 2015 from data collected by the Energy Information Administration. With that information, we can then conduct Exploratory Data Analysis (EDA) related to yearly household energy consumption, the expenditures of energy related to climate region, census income levels, and appliance types. In addition, the EDA will then allow us to perform more complex predictive models, including linear regression, ridge regression, a regression tree, and others. The dataset for this project is from the 2015 Residential Energy Consumption Survey (RECS) conducted by the U.S. Energy Information Administration (EIA), also known as the branch of the U.S. Department of Energy responsible for collecting data specifically related to energy. This is the 14th edition of this national household survey, which is periodically carried out every five years or so (though this has varied over the years), the first of which was collected back in 1978.
+
+For this analysis, the year 2015 was used as we believed it to be the best option that wouldn't present a significant amount of outliers, compared to other years. For instance, while we could have used the 2020 RECS survey, as it was the most recent, it was also collected at the height of the COVID-19 pandemic. As a result, while working on our proposal, our preliminary research indicated that 2020 may have been an anomaly, particularly when it came to energy consumption. As the EIA themselves point out, "Despite many people spending more time in their homes during 2020 in response to the COVID-19 pandemic, U.S. energy consumption in the residential sector fell 4% between 2019 and 2020." Additionally, we decided not to use the 2009 RECS, despite it having more observations, due to its proximity to the 2008 financial crisis, another factor we feared might influence the data. Most importantly, however, the 2015 RECS was much more recent, and therefore relevant, and more reliable.
+
+## 1.1 Background Information and Definitions
+
+As we sought to familiarize ourselves with the topic, some general research was needed so we could better understand the information presented to us in the data. In doing so, it became clear that some basic knowledge regarding energy consumption, with relation to appliances and environment, should be explained in order to proceed with the analysis.
+
+This involves, firstly, establishing how a heat pump works, and why it's relevant to our study. Heat pumps, as defined by the U.S. Department of Energy, are an "energy-efficient alternative to furnaces and air conditioners for all climates [that] use electricity to transfer heat from a cool space to a warm space, making the cool space cooler and the warm space warmer." As a result, since they only transfer heat, rather than actually heating or cooling an environment, they are seen as a more efficient appliance to use when it comes to controlling a given household's temperature. While there are different types of heat pumps, they generally do not consume a lot of electricity, meaning they cost less, and have a considerably smaller carbon footprint as well. That being said, it's also important to note that the installation and purchase of heat pumps can be more expensive than traditional AC systems, but nevertheless, you would still save more overtime (the U.S. DoE estimates that by switching to a heat pump, you might be able to lower their energy usage by around 50%). In our analysis, we will look to determine if these promises of lower energy consumption, and consequently, lower costs, hold their ground.
+
+Secondly, we thought that an interesting relationship to analyze throughout this process is to what extent climate and geography might have an effect on energy bills. For this, it was necessary to first understand what the existing literature has written on the topic. To that end, a working paper published by the International Monetary Fund (IMF) found that "there is a U-shaped relationship between electricity consumption and temperature [...] and the impact of temperature on electricity consumption is persistent," (Yao 29). This implies then that there are no particular climates types, necessarily, that increase the demand for energy, but rather, extreme temperatures overall (very hot/very cold). In addition to that, another working paper, published by the Energy Policy Research Group, in collaboration with the University of Cambridge, observed that "in general although temperature has robust and relatively flat effects on electricity demand [...], rain and sunshine duration show greater potential to affect individual behaviour and daily routines," (Kang and Reiner 10). This interpretation differs from the previous one, in that it argues humidity plays a role as well, along with climate. This then gives us an idea that there may be an observable relationship in our dataset, which will be tested.
+
+Due to the nature of the data that we are working with, it is important that we also establish some definitions for the terms we will be using throughout this paper. One key term, for instance, is the term "household", which the EIA defines as "all people who occupy a particular housing unit as their usual residence or who live there at the time of the interview and have no usual residence elsewhere." This is slightly different from the term "housing unit", which as defined by the EIA as well, consists of "a house, apartment, group of rooms, or single room if it is either occupied or intended for occupancy as separate living quarters by a family, an individual, or a group of unrelated persons." That is to say then, that per the EIA, a "household" are the individuals within the "housing unit". However, for the sake of simplicity, and to not get lost in semantics, throughout the entirety of this paper, the term "household" will refer to both the "housing unit" as well as those who reside within it.
+
+# 2 The Dataset (`RECS2015`)
+
+The dataset used was a sample of 5,686 households out of a total of 118.2 million that were surveyed. These were randomly selected by the EIA itself, using "a complex, multistage, area-probability sample design". This, in turn, gives us some assurance that skewness in the data may be minimized, due to the random sampling that was done.\
+The data itself has 759 variables, consisting of both quantitative and qualitative variables. Throughout our analysis we used the following variables:
+
+-   `MONEYPY`: This is an ordinal variable measuring annual gross household income earned over the year preceding the survey period. It has a total of 8 categories, in order from smallest to largest:
+
+    -   1: `Less than $20,000`
+
+    -   2: `$20,000 - $39,999`
+
+    -   3: `$40,000 - $59,999`
+
+    -   4: `$60,000 to $79,999`
+
+    -   5: `$80,000 to $99,999`
+
+    -   6: `$100,000 to $119,999`
+
+    -   7: `$120,000 to $139,999`
+
+    -   8: `$140,000 or more`
+
+-   `UATYP10`: This is a nominal variable describing the housing type, as per the 2010 census, in which the household is located. It has a total of 3 categories, in no particular order:
+
+    -   `C` (Urban Cluster)
+
+    -   `R` (Rural)
+
+    -   `U` (Urban Area)
+
+-   `DIVISION`: This is a nominal variable listing the U.S. census division where the household is located. It should be noted that while the U.S. Census Bureau normally only has one `Mountain` division, the 2015 RECS divides it into two (`Mountain North` and `Mountain South`). As such, it has 10 categories, in the following order:
+
+    -   1: `New England` (Connecticut, Maine, Massachusetts, New Hampshire, Rhode Island, and Vermont)
+
+    -   2: `Middle Atlantic` (New Jersey, New York, and Pennsylvania)
+
+    -   3: `East North Central` (Indiana, Illinois, Michigan, Ohio, and Wisconsin)
+
+    -   4: `West North Central` (Iowa, Kansas, Minnesota, Missouri, Nebraska, North Dakota, and South Dakota)
+
+    -   5: `South Atlantic` (Delaware, Distric of Columbia, Florida, Georgia, Maryland, North Carolina, South Carolina, Virginia, and West Virginia)
+
+    -   6: `East South Central` (Alabama, Kentucky, Mississippi, and Tennessee)
+
+    -   7: `West South Central` (Arkansas, Louisiana, Oklahoma, and Texas)
+
+    -   8: `Mountain North` (Colorado, Idaho, Montana, Utah, and Wyoming)
+
+    -   9: `Mountain South` (Arizona, New Mexico, and Nevada)
+
+    -   10: `Pacific` (Alaska, California, Hawaii, Oregon, and Washington)
+
+-   `REGIONC`: This is a nominal variable listing the U.S. Census regions where the household is located. It has 4 categories, in the following order:
+
+    -   1: `Northeast` ("New England" and "Middle Atlantic")
+
+    -   2: `Midwest` ("East North Central" and "West North Central")
+
+    -   3: `South` ("South Atlantic", "East South Central", and "West South Central")
+
+    -   4: `West` ("Mountain North", "Mountain South", and "Pacific")
+
+-   `CLIMATE_REGION_PUB`: This is a nominal variable which describes the "Building America Climate Zone" in which the household is located. For reference, "Building America" is a program created by the U.S. Department of Energy to promote "innovations in residential building energy efficiency and performance", among other goals. In order to save the most energy in homes, they have established climate zones that span the United States based on average temperatures and precipitation. In total, it has 5 categories, in no particular order:
+
+    -   `Cold/Very Cold`
+
+    -   `Hot-Dry/Mixed-Dry`
+
+    -   `Hot-Humid`
+
+    -   `Mixed-Humid`
+
+    -   `Marine`
+
+-   `CENACHP`: This is a nominal variable asking survey respondents whether their central air conditional is a pump. It has 3 categories, in no particular order:
+
+    -   1: `Yes`
+
+    -   0: `No`
+
+    -   -2: `Not Applicable`
+
+-   `EQUIPM`: This is a nominal variable asking survey respondents what their main space heating equipment type. It has 11 categories, in the following order:
+
+    -   2: `Steam/hot water system with radiators or pipes`
+
+    -   3: `Central furnace`
+
+    -   4: `Heat pump`
+
+    -   5: `Built-in electric units installed in walls, ceilings, baseboards, or floors`
+
+    -   6: `Built-in floor/wall pipeless furnace`
+
+    -   7: `Built-in room heater burning gas, oil, or kerosene`
+
+    -   8: `Wood-burning stove (cordwood or pellets)`
+
+    -   9: `Fireplace`
+
+    -   10: `Portable electric heaters`
+
+    -   21: `Some other equipment`
+
+    -   2: `Not applicable`
+
+-   `DOLLAREL`: This is a ratio variable which measures the total household electricity cost for 2015, in US dollars.
+
+-   `DOLELSPH`: This is a ratio variable which measures the electricity cost for space heating (main and secondary) for 2015, in US dollars.
+
+-   `DOLELCOL`: This is a ratio variable which measures the electricity cost for air conditioning (central systems and individual units) for 2015, in US dollars.
+
+In addition to the variables listed above, some preliminary graphs were made to compare total electricity costs of different appliances, for 2015. These are all ratio variables, measured in US dollars:
+
+-   `DOLELWTH`: Water heating (main and secondary)
+
+-   `DOLELRFG`: All refrigerators
+
+-   `DOLELFRZ`: Freezers
+
+-   `DOLELCOK`: Cooking (stoves, cooktops, and ovens)
+
+-   `DOLELMICRO`: Microwaves
+
+-   `DOLELCW`: Clothes washers
+
+-   `DOLELCDR`: Clothes dryers
+
+-   `DOLELDWH`: Dishwashers
+
+-   `DOLELLGT`: Indoor and outdoor lighting
+
+-   `DOLELTVREL`: Televisions and related peripherals
+
+-   `DOLELAHUHEAT`: Air handlers and boiler pumps used for heating
+
+-   `DOLELAHUCOL`: Air handlers used for cooling
+
+-   `DOLELEVAPCOL`: Evaporative coolers
+
+-   `DOLELCFAN`: Ceiling fans
+
+-   `DOLELDHUM`: Dehumidifiers
+
+-   `DOLELPLPMP`: Swimming pool pumps
+
+-   `DOLELHTBPMP`: Hot tub pumps
+
+-   `DOLELHTBHEAT`: Hot tub heaters
+
+-   `DOLELNEC`: Other devices not previously stated
+
+# 3 Exploratory Data Analysis (EDA)
+
+Having then looked into our data and understanding the variables that we were working with, we generated the following *initial* research questions for us to answer (we will eventually use these to generate *additional* research questions which will be answered with modelling):
+
+1.  **Are heat pumps more common in certain income brackets?**
+
+2.  **Do income brackets have different household electricity costs?**
+
+3.  **Is urban density an impactful variable on household electricity costs?**
+
+4.  **Do climate and geography have an impact on household electricity costs?**
+
+```{r}
+#LoadData ----- 
+
+RECS2015 <- read.csv("recs2015_public_v4.csv", header=TRUE, sep=",")
+
+app_cost <- data.frame(RECS2015$DOLELSPH,
+                       RECS2015$DOLELCOL,
+                       RECS2015$DOLELWTH,
+                       RECS2015$DOLELRFG,
+                       RECS2015$DOLELFRZ,
+                       RECS2015$DOLELCOK,
+                       RECS2015$DOLELMICRO,
+                       RECS2015$DOLELCW,
+                       RECS2015$DOLELCDR,
+                       RECS2015$DOLELDWH,
+                       RECS2015$DOLELLGT,
+                       RECS2015$DOLELTVREL,
+                       RECS2015$DOLELCFAN)
+
+colnames(app_cost) <- c(
+  "Spaceheating", 
+  "AC", 
+  "Waterheating",
+  "Refrigerator", 
+  "Freezer",
+  "Cooking", 
+  "Microwave",
+  "Clothewasher", 
+  "Clothedryer",
+  "Dishwasher",
+  "Light", 
+  "TV",
+  "Fans")
+
+app_cost <- outlierKD2(app_cost, (Spaceheating), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (AC), rm =TRUE) 
+app_cost <- outlierKD2(app_cost, (Waterheating), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Light), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (TV), rm =TRUE)  
+app_cost <- outlierKD2(app_cost, (Dishwasher), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Refrigerator), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Freezer), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Cooking), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Microwave), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Clothewasher), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Clothedryer), rm =TRUE)
+app_cost <- outlierKD2(app_cost, (Fans), rm =TRUE)
+
+app_cost <- app_cost[-ncol(app_cost)]
+
+app_cost["series"] <- rep(1, nrow(app_cost))
+
+test <- melt(app_cost,  id.vars = 'series', variable.name = 'index')
+
+test %>%
+  arrange(index)%>%
+  mutate(index = factor(index, levels = c("series",
+                                          "Waterheating",
+                                          "AC",
+                                          "Spaceheating", 
+                                          "Light",
+                                          "TV",
+                                          "Refrigerator",
+                                          "Clothedryer",
+                                          "Fans",
+                                          "Freezer",
+                                          "Cooking", 
+                                          "Microwave", 
+                                          "Dishwasher",
+                                          "Clothewasher"
+                                          ))) %>%
+  ggplot(
+    aes(x = series,
+        y = value,
+        fill = index))+ 
+  geom_bar(stat = "identity", 
+           position = "dodge") +
+  labs(title = "Annual Electricity Cost of Different Appliances", 
+       x = "Appliances",
+       y = "Annual Electricity Cost")+  
+  theme(axis.text.x = element_blank())
+```
+
+Above we can see a plot of common appliances and their total yearly electricity usage. We can notice that waterheating, spaceheating, and air conditioning are among the top appliances that consume electricity. Consequently, we see that central air costs for heating and cooling are among the top energy expenses for households. Kindly note as well that outliers were removed from the data.
+
+Now that we've established these differences in appliance cost, and the most costly of those, we can further examine the role that space heating, and heat pumps in particular, play in terms of determining yearly space heating costs.
+
+## 3.1 Heat pump
+
+```{r}
+#Electricity costs for space heating (“DOLELSPH” variable),
+
+RECS2015$DOLELSPH <- currency(RECS2015$DOLELSPH,
+                              symbol = "$",
+                              digits = 2L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+
+#Electricity costs for air conditioning (“DOLELCOL” variable),
+
+RECS2015$DOLELCOL <- currency(RECS2015$DOLELCOL,
+                              symbol = "$",
+                              digits = 2L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+
+#Natural Gas costs (“DOLLERNG” variable),
+
+RECS2015$DOLLARNG <- currency(RECS2015$DOLLARNG,
+                              symbol = "$",
+                              digits = 2L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+
+#Natural Gas costs (“DOLLARFO” variable),
+
+RECS2015$DOLLARFO <- currency(RECS2015$DOLLARFO,
+                              symbol = "$",
+                              digits = 2L,
+                              format = "f",
+                              big.mark = ",",
+                              sep = "")
+
+#Heat Pump dataframe 
+RECS2015 <- RECS2015 %>% 
+  mutate(CENACHP = as.factor(case_when(CENACHP == 1 ~ "Has a Heat Pump",
+                                       CENACHP == 0 ~ "No Heat Pump",
+                                       CENACHP == -2 ~ "NA")))
+
+RECS2015 <- RECS2015 %>%
+  mutate(MONEYPY = as.factor(case_when(MONEYPY == 1 ~ "Less than $20,000",
+                                       MONEYPY == 2 ~ "$20,000 - $39,999",
+                                       MONEYPY == 3 ~ "$40,000 - $59,999",
+                                       MONEYPY == 4 ~ "$60,000 to $79,999",
+                                       MONEYPY == 5 ~ "$80,000 to $99,999",
+                                       MONEYPY == 6 ~ "$100,000 to $119,999",
+                                       MONEYPY == 7 ~ "$120,000 to $139,999",
+                                       MONEYPY == 8 ~ "$140,000 or more")))
+
+RECS2015 <- RECS2015 %>%
+  mutate(EDUCATION = as.factor(case_when(EDUCATION == 1 ~ "Less than high school diploma or GED",
+                                         EDUCATION == 2 ~ "High school diploma or GED",
+                                         EDUCATION == 3 ~ "Some college or Associate’s degree",
+                                         EDUCATION == 4 ~ "Bachelor’s degree",
+                                         EDUCATION == 5 ~ "Grad Plus degree")))
+
+RECS2015 <- RECS2015 %>%
+  mutate(YEARMADERANGE = as.factor(case_when(YEARMADERANGE == 1 ~ "Before 1950",
+                                             YEARMADERANGE == 2 ~ "1950 to 1959",
+                                             YEARMADERANGE == 3 ~ "1960 to 1969",
+                                             YEARMADERANGE == 4 ~ "1970 to 1979",
+                                             YEARMADERANGE == 5 ~ "1980 to 1989",
+                                             YEARMADERANGE == 6 ~ "1990 to 1999",
+                                             YEARMADERANGE == 7 ~ "2000 to 2009",
+                                             YEARMADERANGE == 8 ~ "2010 to 2015")))
+
+RECS2015 <- RECS2015 %>%
+  mutate(EQUIPM = as.factor(case_when(EQUIPM == 2 ~ "Steam/hot water system with radiators or pipes",
+                                      EQUIPM == 3 ~ "Central furnace",
+                                      EQUIPM == 4 ~ "Heat pump",
+                                      EQUIPM == 5 ~ "Built-in electric units installed in walls, ceilings, baseboards, or floors",
+                                      EQUIPM == 6 ~ "Built-in floor/wall pipeless furnace",
+                                      EQUIPM == 7 ~ "Built-in room heater burning gas, oil, or kerosene",
+                                      EQUIPM == 8 ~ "Wood-burning stove (cordwood or pellets)",
+                                      EQUIPM == 9 ~ "Fireplace",
+                                      EQUIPM == 10 ~ "Portable electric heaters",
+                                      EQUIPM == 21 ~ "Some other equipment",
+                                      EQUIPM == -2 ~ NA)))
+```
+
+```{r}
+central_air_df <- data.frame(RECS2015$DOLELSPH, 
+                             RECS2015$DOLELCOL, 
+                             RECS2015$CENACHP)
+
+colnames(central_air_df) <- c("Electricity Space Heating Costs", 
+                              "Electricity AC Costs", 
+                              "Heat Pump Status")
+
+
+#dataframe prep for combo plot
+i <- 1
+newdf <- 0
+for(i in 2:2){
+  
+  newdf["Electricity Costs in $"] <- rbind(as_tibble(central_air_df[,1]), as_tibble(central_air_df[,i]))
+  
+}
+newdf <- as.data.frame(newdf)
+newdf["Heat Pump Status"] <- rep(central_air_df$`Heat Pump Status`, 2) 
+newdf["Group"] <- rbind(as_tibble(rep("Heating", nrow(central_air_df))), 
+                        as_tibble(rep("Cooling", nrow(central_air_df)))) 
+
+newdf <- newdf[-1]
+colnames(newdf) <- c("Electricity Costs in $", "Heat Pump Status", "Group")
+
+group.colors <- c("Heating" = "Orange", "Cooling" = "Light Blue")
+
+ggplot(newdf,
+       aes(x = `Heat Pump Status`,
+           y = `Electricity Costs in $`,
+           fill = `Group`))+
+  geom_col(stat = "identity", position = "dodge")+
+  labs(title = "Yearly Central Air Costs (in $)")+
+  scale_fill_manual(values=group.colors)
+```
+
+This plot shows heating and cooling costs for households with heat pumps and without heatpumps. Households with heatpumps roughly save half of their heating costs than households without heat pumps. A T-test (see below) indicated that the difference between households with heatpumps is significant for total, yearly heating costs.
+
+Cooling costs for households with heat pumps reduce by almost \$500 a year (in total cooling costs) compared to households without heat pumps. A T-test (see below) indicated that the difference between households with heatpumps is significant for total, yearly AC costs.
+
+```{r}
+#T-Test for heatpumps v. spaceheater----
+
+ttest_central_air_df <- central_air_df %>%
+  mutate(`alt` = central_air_df$`Heat Pump Status` == "Has a Heat Pump",
+         'null' = central_air_df$`Heat Pump Status` == "No Heat Pump")
+
+no_hp <- ttest_central_air_df %>%
+  filter(null == TRUE)
+    
+has_hp <- ttest_central_air_df %>%
+  filter(alt == TRUE)
+
+t.test(x = has_hp$`Electricity Space Heating Costs`,
+       conf.level = 0.95,
+       mu = mean(no_hp$`Electricity Space Heating Costs`))
+
+#T-Test for heatpumps v. AC-----
+
+no_hp <- ttest_central_air_df %>%
+  filter(null == TRUE)
+
+has_hp <- ttest_central_air_df %>%
+  filter(alt == TRUE)
+
+t.test(x = has_hp$`Electricity AC Costs`,
+       conf.level = 0.95,
+       mu = mean(no_hp$`Electricity AC Costs`))
+
+```
+
+```{r}
+#----------------------Income and Energy Expenditure info----------------------- ------
+#Annual gross household income for the last year (“MONEYPY” variable),
+
+central_air_df["Income"] <- data.frame(RECS2015$MONEYPY)
+
+has_hp <- central_air_df %>%
+  filter(`Heat Pump Status` == "Has a Heat Pump")
+
+no_hp <- central_air_df %>%
+  filter(`Heat Pump Status` == "No Heat Pump")
+
+central_air_df %>%
+  arrange(`Heat Pump Status`) %>%
+  mutate(Income = factor(Income, levels = c("Less than $20,000",
+                                            "$20,000 - $39,999",
+                                            "$40,000 - $59,999",
+                                            "$60,000 to $79,999",
+                                            "$80,000 to $99,999",
+                                            "$100,000 to $119,999",
+                                            "$120,000 to $139,999",
+                                            "$140,000 or more")))%>%
+  ggplot(aes(x = Income,
+             y = `Heat Pump Status`,
+             fill = `Heat Pump Status`))+
+  geom_bar(stat = "identity")+
+  labs(title = "Income Bracket And Heat Pump Status",
+       ylab = "")+
+  theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)),
+        axis.text.y=element_blank()) 
+
+```
+
+We can see a bar plot of heat pump status as binary counts based on household income brackets. Based on ocular scrutiny, higher income brackets report larger ratios of having heatpumps. The \$20k - \$39k income bracket have the highest counts of not having heatpumps, and having heat pumps. The \$40k - \$59k; \$140k to more income brackets have high ratios of having heat pumps.
+
+```{r}
+
+HP_table = table(central_air_df$`Heat Pump Status`, central_air_df$Income)
+HP_chitest = chisq.test(HP_table)
+HP_chitest$statistic
+
+HP_chitest$p.value
+
+HP_chitest$parameter
+```
+
+The chi-squared test above indicates that income brackets and heat pump status are correlated at the 95% CI.
+
+## 3.2 Income
+
+```{r}
+
+#BOXPLOT of income and yearly energy costs----
+central_air_df["TotElectricity"] <- RECS2015$DOLLAREL
+
+central_air_df <- outlierKD2(central_air_df, TotElectricity, rm= TRUE)
+
+#PLOT income by total electricity usage-----
+central_air_df %>%
+  arrange(`Heat Pump Status`) %>%
+  mutate(Income = factor(Income, levels = c("Less than $20,000",
+                                            "$20,000 - $39,999",
+                                            "$40,000 - $59,999",
+                                            "$60,000 to $79,999",
+                                            "$80,000 to $99,999",
+                                            "$100,000 to $119,999",
+                                            "$120,000 to $139,999",
+                                            "$140,000 or more")))%>%
+  ggplot(aes(x = Income,
+             y = TotElectricity, 
+             color = Income)) + 
+  geom_boxplot(stat = "boxplot") +
+  labs(title = "Yearly Electricity Cost by Income Level ", 
+       x = "Income level",
+       y = "Yearly Electricity Cost (in $)")+  
+  theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
+        axis.text.y=element_text())
+```
+
+After removing outliers, we can see the boxplot above of income brackets and total yearly electricity costs. On averge, lower incomes tend to spend less on electricity costs, compared to higher incomes. This is also supported in literature about energy poverty and cultural practices to save energy.
+
+Below is an ANOVA table of the total electricity related to Income. Since we observe that households with different income levels will have different electricity costs, we then performed a post-hoc test to see which categories are different.
+
+```{r}
+#ANOVA Test (Income level)----
+anovaInc = aov(TotElectricity ~ Income, data = central_air_df)
+xkabledply(anovaInc, title = "ANOVA result summary")
+
+```
+
+```{r}
+
+Income_tukeyAoV <- TukeyHSD(anovaInc)
+Income_tukeyAoV
+```
+
+In short, post-hoc testing confirms that, overall, income bracket pairs with the greatest difference between each other seem to have the greatest difference in means as well (e.g. Less than \$20,000-\$140,000 or more, with a difference of -587.90).
+
+## 3.3 Urban Density and Division
+
+Since we are using a new dataframe here, we once again make sure to remove the outliers from the variable `DOLLAREL`.
+
+```{r}
+#Spatial Prep------
+
+#Preparing Census Regions 
+
+RECS2015 <- RECS2015 %>%
+  mutate(REGIONC = as.factor(case_when(REGIONC == 1 ~ "Northeast",
+                                       REGIONC == 2 ~ "Midwest",
+                                       REGIONC == 3 ~ "South",
+                                       REGIONC == 4 ~ "West")))
+RECS2015$REGIONC
+plot(RECS2015$REGIONC)
+
+#Preparing Census Divisions
+
+RECS2015 <- RECS2015 %>%
+  mutate(DIVISION = as.factor(case_when(DIVISION == 1 ~ "New England",
+                                       DIVISION == 2 ~ "Middle Atlantic",
+                                       DIVISION == 3 ~ "East North Central",
+                                       DIVISION == 4 ~ "West North Central",
+                                       DIVISION == 5 ~ "South Atlantic",
+                                       DIVISION == 6 ~ "East South Central",
+                                       DIVISION == 7 ~ "West South Central",
+                                       DIVISION == 8 ~ "Mountain North",
+                                       DIVISION == 9 ~ "Mountain South",
+                                       DIVISION == 10 ~ "Pacific",)))
+
+#Electricity cost differences between urban and rural areas (“UATYP10” variable),
+
+#rename levels of area 
+RECS2015 <- RECS2015 %>% 
+  mutate(UATYP10 = as.factor(case_when(UATYP10 == "U" ~ "Urban Area",
+                                       UATYP10 == "R" ~ "Rural",
+                                       UATYP10 == "C" ~ "Urban Cluster")))
+
+#dataframe of area and total energy
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate")
+
+#HISTOGRAM and Q-Q Plot before outliers are removed----
+ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(19, 8122, by = 100), 
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Electricity Cost", y="Frequency") +
+  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
+
+qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
+qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
+
+### Removing outliers:
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df, `Yearly Electricity Costs`, rm= TRUE)
+
+#HISTOGRAM and Q-Q Plot again after removing outliers----
+
+ggplot(data=Tot_Energy_area_df, aes(x = `Yearly Electricity Costs`)) + 
+  geom_histogram(breaks=seq(19, 8122, by = 100), 
+                 col="black", 
+                 fill="dark green", 
+                 alpha = .7) + # opacity
+  labs(x="Electricity Cost", y="Frequency") +
+  labs(title="Histogram of Total Electricity Cost, Using `ggplot`")
+
+qqnorm(Tot_Energy_area_df$`Yearly Electricity Costs`, main = "Q-Q Plot of Total Electricity Cost")
+qqline(Tot_Energy_area_df$`Yearly Electricity Costs`)
+
+```
+
+```{r}
+
+#PLOT Yearly expenditure differences by Division and Density-----
+Tot_Energy_area_df %>%
+  arrange(`Yearly Electricity Costs`)%>%
+  mutate(Division = factor(Division, levels = c("New England",
+                                                "Middle Atlantic",
+                                                "East North Central",
+                                                "West North Central",
+                                                "South Atlantic",
+                                                "East South Central",
+                                                "West South Central",
+                                                "Mountain North",
+                                                "Mountain South",
+                                                "Pacific")))%>%
+  ggplot(
+    aes(x = `Urban Density`,
+        y = `Yearly Electricity Costs`,
+        fill = fct_reorder(`Division`, `Yearly Electricity Costs`)))+
+  geom_boxplot(stat = "boxplot", 
+               position = "dodge")+
+  labs(title = "Urban Density and Electricity Costs",
+       fill= "Division")+
+  theme(axis.text.x = element_text(size = 9, margin = margin(r=0)), 
+        axis.text.y=element_text())+ 
+  scale_color_brewer(palette = "Pastel2")
+
+```
+
+Above is a boxplot of census divisions and total yearly electricity costs. We can observe that, across most census divisions, households in rural areas spend more on electricity than those in urban or urban cluster areas. That being said, it's also important to note that urban areas generally have high populations, which may explain the more distant outliers. On the modelling section of our analysis, we will be taking a deeper look as to how these variables interact with each other to determine annual household energy expenditure.
+
+Below is an ANOVA table for both ubran density and division variables related to total yearly electricity costs. This suggests that the mean differences between urban density and division variables respective to total yearly electricity costs is influential on total yearly income.
+
+```{r}
+#ANOVA Test (Urban density)----
+
+anovaUrb = aov(`Yearly Electricity Costs` ~ `Urban Density`, data = Tot_Energy_area_df)
+xkabledply(anovaUrb, title = "ANOVA result summary")
+
+anovaDiv = aov(`Yearly Electricity Costs` ~ Division + `Urban Density`, data = Tot_Energy_area_df)
+xkabledply(anovaDiv, title = "ANOVA result summary")
+
+```
+
+## 3.4 Division and Climate
+
+Below we can see a stacked bar plot that looks at the average household electricity cost for each division, while controlling for climate. It allows us to visualize not just what specific divisions are the most impacted by electricity costs, but in addition, what climates contribute the most towards household expenditure.
+
+```{r}
+#PLOT Barplots of US Census v. Yearly Electricity Costs, Controlling for Climate----
+level_order <- c("Mountain North", "Mountain South", "New England", "East South Central", "West North Central", "Middle Atlantic", "West South Central", "East North Central", "Pacific", "South Atlantic")
+Tot_Energy_area_df$Division <- factor(Tot_Energy_area_df$Division, levels = level_order)
+
+ggplot(Tot_Energy_area_df, aes(x=Division, 
+                               y=`Yearly Electricity Costs`, 
+                               color=Climate, 
+                               fill = Climate)) +
+  geom_bar(stat = "identity") +
+  labs(x="US Census Division", y="Yearly Electricity Costs", title="Division vs. Electricity Cost, Colored by Climate") +
+   theme(axis.text.x = element_text(angle = 45, size = 9, margin = margin(r=0)), 
+        axis.text.y=element_text())
+```
+
+For reference, you may find a maps below that illustrate how the census divisions are divided, as well as the main climate regions.
+
+```{r}
+#Load USA states----
+
+usa <- map_data("usa")
+
+states <- map_data("state")
+
+# census divisions
+
+states <- states %>%
+  mutate(region = as.factor(case_when(region == "connecticut" ~ "New England",
+                                      region == "maine" ~ "New England",
+                                      region == "massachusetts" ~ "New England",
+                                      region == "new hampshire" ~ "New England",
+                                      region == "rhode island" ~ "New England",
+                                      region == "vermont" ~ "New England",
+                                      region == "new jersey" ~ "Middle Atlantic",
+                                      region == "new york" ~ "Middle Atlantic",
+                                      region == "pennsylvania" ~ "Middle Atlantic",
+                                      region == "indiana" ~ "East North Central",
+                                      region == "illinois" ~ "East North Central",
+                                      region == "michigan" ~ "East North Central",
+                                      region == "ohio" ~ "East North Central",
+                                      region == "wisconsin" ~ "East North Central",
+                                      region == "iowa" ~ "West North Central",
+                                      region == "kansas" ~ "West North Central",
+                                      region == "minnesota" ~ "West North Central",
+                                      region == "missouri" ~ "West North Central",
+                                      region == "nebraska" ~ "West North Central",
+                                      region == "north dakota" ~ "West North Central",
+                                      region == "south dakota" ~ "West North Central",
+                                      region == "delaware" ~ "South Atlantic",
+                                      region == "district of columbia" ~ "South Atlantic",
+                                      region == "florida" ~ "South Atlantic",
+                                      region == "georgia" ~ "South Atlantic",
+                                      region == "maryland" ~ "South Atlantic",
+                                      region == "north carolina" ~ "South Atlantic",
+                                      region == "south carolina" ~ "South Atlantic",
+                                      region == "virginia" ~ "South Atlantic",
+                                      region == "west virginia" ~ "South Atlantic",
+                                      region == "alabama" ~ "East South Central",
+                                      region == "kentucky" ~ "East South Central",
+                                      region == "mississippi" ~ "East South Central",
+                                      region == "tennessee" ~ "East South Central",
+                                      region == "arkansas" ~ "West South Central",
+                                      region == "louisiana" ~ "West South Central",
+                                      region == "oklahoma" ~ "West South Central",
+                                      region == "texas" ~ "West South Central",
+                                      region == "arizona" ~ "Mountain South",
+                                      region == "colorado" ~ "Mountain North",
+                                      region == "idaho" ~ "Mountain North",
+                                      region == "new mexico" ~ "Mountain South",
+                                      region == "montana" ~ "Mountain North",
+                                      region == "utah" ~ "Mountain North",
+                                      region == "nevada" ~ "Mountain South",
+                                      region == "wyoming" ~ "Mountain North",
+                                      region == "alaska" ~ "Pacific",
+                                      region == "california" ~ "Pacific",
+                                      region == "hawaii" ~ "Pacific",
+                                      region == "oregon" ~ "Pacific",
+                                      region == "washington" ~ "Pacific",)))
+
+#PLOT the US Census Divisions------
+divisions_map <- ggplot(data = states) + 
+  geom_polygon(aes(x = long, 
+                   y = lat, 
+                   fill = region, 
+                   group = group), 
+               color = "white") + 
+  coord_fixed(1.3)
+
+ditch_the_axes <- theme(
+  axis.text = element_blank(),
+  axis.line = element_blank(),
+  axis.ticks = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.title = element_blank()
+)
+
+divisions_map + ditch_the_axes
+
+knitr::include_graphics("BA_Climate_Zones.png")
+```
+
+To confirm the differences that we are seeing in the stacked bar plot above, we can perform an ANOVA test, followed by post-hoc testing.
+
+```{r}
+anovaDiv = aov(`Yearly Electricity Costs` ~ Division, data = Tot_Energy_area_df)
+xkabledply(anovaDiv, title = "ANOVA result summary")
+
+Div_Tukeyaov <- TukeyHSD(anovaDiv)
+Div_Tukeyaov
+```
+
+The ANOVA test, followed by Tukey's HSD test, confirms what we can observe above, where some categories pairwise do in fact have different means, but others appear to have very similar ones. With that, we can interpret that, to an extent, it's likely that geography, as well as climate are potentially impacting the yearly electricity expenditure for U.S. households. As a result, humidity may be a bigger indicator of energy consumption, and consequently, average yearly expenditure. In the modelling section, we will observe the extent to which both census division and climate influence electricity costs.
+
+## 3.5 EDA Results
+
+Given how wide the scope of this analysis was, we should now remind ourselves of the four research questions that were proposed at the start, and determine if we have answered each of them.
+
+1.  **Are heat pumps more common in certain income brackets?**
+
+Based on the plots and significance tests, income brackets and heat pump status are correlated at the 95% confidence interval, meaning we can reject the null hypothesis, in favor of the alternative. Therefore, yes there is a relationship between heat pumps and income brackets.
+
+2.  **Do income brackets have different household electricity costs?**
+
+The boxplot, along with ANOVA and post-hoc testing, allowed us to see that it may be possible to infer that there is a positive correlation between household income and annual household electricity expenditure, though this will be more carefully observed in the modelling section below.
+
+3.  **Is urban density an impactful variable on household electricity costs?**
+
+Using the plot, along with significance testing, we were able to find that urban density is an impactful variable on household electricity costs, insofar as the household is considered to be rural. That being said, we will confirm this pattern through modelling.
+
+4.  **Do climate and geography have an impact on household electricity costs?**
+
+For both climate, as well as census divisions, the ANOVA tests we ran confirmed that the means were not similar to each other, meaning we reject the null in favor of the alternative, to say that both variables have an impact on household electricity costs. But with that, the tukey ad-hoc that we ran helped potentially explain how exactly both variables combine to have an effect on household energy costs. Using modelling, we will see exactly if one variable might be playing more of a role than the other.
+
+# 4 Modelling
+
+Having now answered some preliminary research questions through EDA, we now ask more complex questions that we will answer using a variety of models:
+
+1.  **What factors impact the electricity costs related to heat pump implementation?**
+2.  **What factors impact the total electricity costs of a US household, and how strong is that impact?**
+
+## 4.1 Heat pump
+
+To begin answering the first question, we will first produce some linear models, and compare each one.
+
+```{r}
+#REGRESSION - PROJECT 2: What are the HP yearly energy costs -----
+
+house_size <- data.frame(RECS2015$CENACHP,RECS2015$DOLLAREL, log(RECS2015$DOLLAREL/RECS2015$TOTSQFT_EN),RECS2015$YEARMADERANGE, RECS2015$TOTSQFT_EN, log(RECS2015$TOTSQFT_EN), RECS2015$DOLELSPH, RECS2015$DOLELCOL, RECS2015$CLIMATE_REGION_PUB, RECS2015$MONEYPY, RECS2015$NHSLDMEM, RECS2015$EDUCATION, RECS2015$DOLLARNG, RECS2015$DOLLARFO, RECS2015$EQUIPM)
+
+colnames(house_size) <- c("Heat Pump", 'Total Electricity', 'Log Total Electricity/sqft',"Year Made Range", "SqFoot", "Log SqFoot", "Heating Cost", "AC Cost","Climate Region", "Income", "Number of Household Members", "Education", "Total Natural Gas Cost", "Total Fuel Oil/Kerosene Costs", "SH_Type")
+
+house_size <- house_size %>%
+  mutate(`Heat Pump` = case_when(`Heat Pump` == "No Heat Pump" ~ '0',
+                                 `Heat Pump` == "Has a Heat Pump" ~ '1',
+                                 `Heat Pump` == "NA" ~ "NA"))
+
+house_size <- subset(house_size, house_size$SH_Type != "Heat pump", drop = FALSE)
+
+house_size <- subset(house_size, !is.na(SH_Type), drop = FALSE)
+
+house_size <- house_size[!grepl("NA", house_size$`Heat Pump`),]
+
+#Regressions
+
+heatpump1 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`, data = house_size)
+
+heatpump2 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+
+heatpump3 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` + `Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs`, data = house_size)
+
+heatpump4 <- lm(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` +`Climate Region` + 
+                  `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+
+xkabledply(anova(heatpump1, heatpump2, heatpump3, heatpump4))
+
+```
+
+Above we can see an ANOVA table of four different regressions of the change in total energy per squarefootage and heat pump status, while adding controlling for house and household demographic factors. Some sociological controls are income, education since different incomes and educational levels have different yearly electricity costs. Housing and fuel types are controlled in square footage, climate region, and main heating fuel type to isolate the effects of heat pumps.
+
+```{r}
+
+plot(heatpump4)
+summary(heatpump4)
+vif(heatpump4)
+
+```
+
+Above is a result of the best fitted regression (4th, with all controls). It is also observed that there are generally low Variance Inflation Factors (VIFs) in the regression. The main exception is the dummy variable of heat pump status, but this is expected since dummy variables typically have large VIFs. As observed in the residual plots, the residuals are pretty uniform, which loosely matches the actual data. So, it makes it difficult to determine significance for our variables, especially since some variables interact with each other in a system and may be colinear. This is one possible explanation of why heat pump dummy variable does not have statistical significance at the 5% level.
+
+```{r}
+#Matrix of the predictor variables
+X <- model.matrix(`Log Total Electricity/sqft` ~ `SqFoot`+ `Heat Pump` + `Heat Pump`:`Log SqFoot`+`Climate Region`:`Heat Pump` +
+                    `Climate Region` + `SH_Type`+ `Total Natural Gas Cost` + `Total Fuel Oil/Kerosene Costs` +`Income` + `Education`, data = house_size)
+
+#Response variable
+y <- house_size$`Log Total Electricity/sqft`
+
+#Tuning lambda
+cvfit <- cv.glmnet(X, y, alpha = 0, standardize = TRUE)
+
+#PLOT Lambda ----
+plot(cvfit)
+
+#Optimal value of lambda fit
+fit <- glmnet(X, y, alpha = 0, lambda = cvfit$lambda.min, standardize = TRUE)
+
+coef(fit)
+ty <- as.matrix(fit[[2]])
+ty <- ty[-1]
+
+fit <- glmnet::cv.glmnet(X, y)
+autoplot(fit, colour = 'blue')
+```
+
+To account for colinearity, a ridge regression is used to better estimate the variable coefficients to the model based on a tuning parameter lambda. Introducing bias means that there is no way to calculate the mean squared error terms, but we know that the tuning variable Lambda sets the model at the optimal fit to prevent overfitting, which is the cause of colinearity in the original linear regression. It is found that holding all variables constant, having a heat pump decreases the change in total energy expenditures per square footage by 0.11 Standard Deviations. In more digestible terms, using the prior regression, having a heat pump decreases total energy expenditures by 1.4% of electricity costs per 1 square footage.
+
+## 4.2 Income, Urban Density, and Division
+
+Looking now at our second question, we create some general linear models looking specifically at the influence that income, urban density, and census division have on electricity cost.
+
+```{r}
+#REGRESSION Regression of electricity costs controlling for income, urban area type -----
+
+# Adding variables from RECS
+
+Tot_Energy_area_df <- data.frame(RECS2015$UATYP10, RECS2015$DOLLAREL, RECS2015$DIVISION, RECS2015$CLIMATE_REGION_PUB, RECS2015$TOTROOMS, RECS2015$TOTSQFT_EN, RECS2015$MONEYPY)
+colnames(Tot_Energy_area_df) <- c("Urban Density", "Yearly Electricity Costs", "Division", "Climate","Total Rooms", "SqFoot","Income")
+Tot_Energy_area_df <- outlierKD2(Tot_Energy_area_df,`Yearly Electricity Costs` , rm =TRUE)
+
+Tot_Energy_area_df$`Urban Density`<-as.factor(Tot_Energy_area_df$`Urban Density`)
+Tot_Energy_area_df$Division<-as.factor(Tot_Energy_area_df$Division)
+Tot_Energy_area_df$Climate<-as.factor(Tot_Energy_area_df$Climate)
+
+## Linear Models for Income, Urban Density, and Division---
+
+fit1 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`, data =Tot_Energy_area_df)
+fit2 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ `Division`, data = Tot_Energy_area_df)
+fit3 <- lm(`Yearly Electricity Costs`~Income + `Urban Density`+ `Division` +`Urban Density`:`Division`, data = Tot_Energy_area_df)
+
+## Multicollinearity test
+xkablevif(fit1)
+xkablevif(fit2)
+xkablevif(fit3)
+
+## Plot for fitted model
+par(mfrow=c(2,2))
+plot(fit1)
+plot(fit2)
+plot(fit3)
+
+#step(fit3)
+
+#library(jtools)
+#library(interactions)
+#interact_plot(fit3, pred = `Urban Density`, modx = `Division`)
+
+## Tables of LM comparisons, and ANOVA of LMs---
+xkabledply(fit1, title = paste("Model 1:", format(formula(fit1)) ))
+xkabledply(fit2, title = paste("Model 2:", format(formula(fit2)) ))
+xkabledply(fit3) 
+
+anovaRes<-anova(fit1,fit2,fit3)
+xkabledply(anovaRes, title = "ANOVA comparison between the models")
+
+```
+
+Above we see several models that we have created, and at the very bottom, we have an ANOVA test comparing these different models. The last row has the regression with the lowest F-score, and lowest sum of squares error, meaning that, among the three, it is the preferred regression:
+
+**`Yearly Electricity Costs` \~ `Income` + `Urban Density` + `Division` + `Urban Density` \* `Division`**
+
+Looking at the coefficient values of the model, we can observe that income has a positive impact on electricity costs, and in addition, households located in urban areas appear to have lower electricity costs than those in rural areas (when taking census divisions into account), contradicting what we observed in the EDA portion of this analysis. That being said, most of the interaction terms have a p-value greater than 0.05, meaning we cannot consider them to be statistically significant. Along with that, when looking at urban density alone, rural areas still appear to have much lower electricity costs than urban and urban cluster areas.
+
+## 4.3 Division and Climate
+
+Continuing with our second question, we now consider census division and climate by themselves, and generate some linear models.
+
+```{r}
+
+# Preparing Linear Models for climate and census division
+lm.Division <- lm(`Yearly Electricity Costs`~Division, data = Tot_Energy_area_df)
+lm.Climate <- lm(`Yearly Electricity Costs`~Climate, data = Tot_Energy_area_df)
+lm.Division.Climate <- lm(`Yearly Electricity Costs`~Division+Climate, data = Tot_Energy_area_df)
+lm.DivCli.interaction <- lm(`Yearly Electricity Costs`~Division + Climate + Division*Climate, data = Tot_Energy_area_df)
+
+# Tables of LM comparisons, and ANOVA of LMs (Elect cost, climate, census division)
+xkabledply(lm.Division, title = paste("Model (factor): ", format(formula(lm.Division))))
+xkabledply(lm.Climate, title = paste("Model (factor): ", format(formula(lm.Climate))))
+xkabledply(lm.Division.Climate, title = paste("Model (factor): ", format(formula(lm.Division.Climate))))
+xkabledply(lm.DivCli.interaction)
+
+anova.Tot_Area <- anova(lm.Division, lm.Climate, lm.Division.Climate, lm.DivCli.interaction)
+#ANOVA test (which Regression is best) ----
+xkabledply(anova.Tot_Area, title = "ANOVA comparison between the models")
+
+```
+
+The ANOVA comparison of Yearly Electricity Costs related to Climate and Division illustrate that the last row has the regression with the lowest F-score, and lowest sum of squares error, meaning that among the four, it is the preferred regression:
+
+**`Yearly Electricity Costs`\~`Division` + `Climate` + `Division`\*`Climate`**
+
+Interestingly, we can observe that humidity alone, without accounting for census divisions, appears to be impacting household electricity cost much more than the coefficients that contain interaction terms. Combining this with what we observed in the EDA portion, it may be the case that climate is impacting the cost much more than census division.
+
+## 4.4 Stepwise Regression
+
+Having a clearer idea of how some variables are specifically impacting household electricity costs, we now create a stepwise regression using a full model, that takes all variables we looked at so far:
+
+**`Yearly_Electricity_Costs`\~`Income` + `Urban_Density`+ `Division` + `Climate` + `Total_Rooms` + `SqFoot` + `Urban_Density` \* `Division` + `Division` \* `Climate`**
+
+```{r}
+#STEPWISE Regression (Full Model)
+
+# renaming columns for the formula
+names(Tot_Energy_area_df) <- c("Urban_Density", "Yearly_Electricity_Costs", "Division", "Climate", "Total_Rooms", "SqFoot", "Income")
+
+fullmodel <- lm(Yearly_Electricity_Costs~Income + Urban_Density+ Division + Climate +Total_Rooms +SqFoot + Urban_Density* Division + Division*Climate , data = Tot_Energy_area_df)
+step(fullmodel)
+plot(step(fullmodel))
+
+fit5<-lm(Yearly_Electricity_Costs~Income +Total_Rooms + SqFoot+ Division*Climate +Urban_Density*Division, data = Tot_Energy_area_df)
+xkabledply(fit5)
+summary(fit5)
+```
+
+With this more complete model, we confirm some patterns that we have observed so far. We see that income (generally), total number of rooms, and square footage have a positive correlation with electricity cost. Moreover, we once again notice that, when looking at urban density by itself (as many of the interaction terms are not significant), households in rural areas have higher electricity costs than those in urban and urban cluster areas. With that, humid climates also appear to have much higher electricity costs.
+
+## 4.5 Regression Tree
+
+To fully understand all the potential relationships of the variables on household energy expenditure, we created a regression tree that allows us to potentially predict how much a given household would spend on electricity. That being said, a regression tree by itself will not necessarily have accurate predictions, as they have a high variance. However, it still allows us to observe which variables have the most significant impact on electricity costs.
+
+```{r}
+treefit <- tree(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data = Tot_Energy_area_df)
+summary(treefit)
+plot(treefit)
+text(treefit,cex=0.75)
+
+treefitRpart2 <- rpart(log(Yearly_Electricity_Costs) ~ Income + Urban_Density + Division + Climate + Total_Rooms +SqFoot, data=Tot_Energy_area_df)
+summary(treefitRpart2)
+fancyRpartPlot(treefitRpart2, cex=0.75)
+
+#Deviance
+my.tree = tree(Yearly_Electricity_Costs  ~ Income + Urban_Density + Division + Climate + Total_Rooms + SqFoot, data=Tot_Energy_area_df)
+prune.tree(my.tree,best=5)
+my.tree.seq = prune.tree(my.tree)
+plot(my.tree.seq)
+
+deviance1 <- my.tree.seq$dev
+deviance1
+```
+
+The regression tree shows yearly electricity costs being influenced by factors like total rooms, climate, square footage, and income. This is helpful for determining predictive factors for the variables. As we can see, households with more rooms, greater square footage, that resided in either extreme or humid climates, and had a higher income, tend to spend more on electricity, annually. Notably, division does not appear to have an impact, per the regression tree, showcasing once more that climate may influence energy costs much more than census division.
+
+A plot showing the size vs. deviance was also created to show that the regression tree has a very low error. This would be concerning if we were looking to predict a specific cost based on the variables (i.e. overfitting), but since we are only looking at their importance, the tree will do just fine.
+
+# 5 Conclusion
+
+With the models that we created above, we now look back at the additional research questions we proposed in order to answer them.
+
+1.  **What factors impact the electricity costs related to heat pump implementation?**
+
+Based on the linear models, along with ridge regression, we found that heat pumps have decrease total energy expenditures by 1.4% of electricity costs per 1 square footage. This is observed when controlling for environmental and housing attributes, as well as fuel types.
+
+1.  **What factors impact the total electricity costs of a US household, and how strong is that impact?**
+
+Using the various linear models we created, along with the stepwise regression, we see that income, urban density, total rooms, area, and climate have a significant impact on electricity costs. At the same time, we also observed that division only has a mild impact compared to the other factors that were analyzed. One potential reason that this may be the case could be due to the fact that, certain census divisions are mostly made up by a single climate. Consequently, it is not so much that division is increasing household energy costs, but rather, the climate that is present in that division is mainly responsible for the increase.
+
+# References
+
+*Despite more people staying at home, U.S. residential energy use fell 4% in 2020*. Homepage - U.S. Energy Information Administration (EIA). (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/todayinenergy/detail.php?id=47976>
+
+*Heat Pump Systems*. Energy.gov. (n.d.). Retrieved March 22, 2023, from <https://www.energy.gov/energysaver/heat-pump-systems>
+
+Kang, J., & Reiner, D. M. (2022, April 29). *What is the effect of weather on household electricity consumption? Empirical evidence from Ireland*. ScienceDirect. Retrieved March 22, 2023, from <https://www.sciencedirect.com/science/article/pii/S014098832200189X>
+
+*RECS Terminology*. EIA. (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/consumption/residential/terminology.php#h>
+
+*U.S. Energy Information Administration - EIA - independent statistics and analysis*. EIA. (n.d.). Retrieved March 22, 2023, from <https://www.eia.gov/consumption/residential/data/2015/index.php?view=microdata>
+
+Yao, J. (2021, February 5). *Electricity consumption and temperature: Evidence from Satellite Data*. IMF. Retrieved March 22, 2023, from <https://www.imf.org/en/Publications/WP/Issues/2021/02/05/Electricity-Consumption-and-Temperature-Evidence-from-Satellite-Data-50031>
